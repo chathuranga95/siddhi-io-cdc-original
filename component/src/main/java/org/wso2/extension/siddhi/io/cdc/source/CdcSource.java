@@ -1,92 +1,106 @@
 package org.wso2.extension.siddhi.io.cdc.source;
 
+import org.apache.log4j.Logger;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
 import org.wso2.siddhi.annotation.util.DataType;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
 import org.wso2.siddhi.core.exception.ConnectionUnavailableException;
-import org.wso2.siddhi.core.exception.SiddhiAppCreationException;
 import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
 
+import java.net.URI;
 import java.util.Map;
 
 /**
- * This is a sample class-level comment, explaining what the extension class does.
- */
-
-/**
- * Annotation of Siddhi Extension.
- * <pre><code>
- * eg:-
- * {@literal @}Extension(
- * name = "The name of the extension",
- * namespace = "The namespace of the extension",
- * description = "The description of the extension (optional).",
- * //Source configurations
- * parameters = {
- * {@literal @}Parameter(name = "The name of the first parameter",
- *                               description= "The description of the first parameter",
- *                               type =  "Supported parameter types.
- *                                        eg:{DataType.STRING, DataType.INT, DataType.LONG etc}",
- *                               dynamic= "false
- *                                         (if parameter doesn't depend on each event then dynamic parameter is false.
- *                                         In Source, only use static parameter)",
- *                               optional= "true/false, defaultValue= if it is optional then assign a default value
- *                                          according to the type."),
- * {@literal @}Parameter(name = "The name of the second parameter",
- *                               description= "The description of the second parameter",
- *                               type =   "Supported parameter types.
- *                                         eg:{DataType.STRING, DataType.INT, DataType.LONG etc}",
- *                               dynamic= "false
- *                                         (if parameter doesn't depend on each event then dynamic parameter is false.
- *                                         In Source, only use static parameter)",
- *                               optional= "true/false, defaultValue= if it is optional then assign a default value
- *                                         according to the type."),
- * },
- * //If Source system configurations will need then
- * systemParameters = {
- * {@literal @}SystemParameter(name = "The name of the first  system parameter",
- *                                      description="The description of the first system parameter." ,
- *                                      defaultValue = "the default value of the system parameter.",
- *                                      possibleParameter="the possible value of the system parameter.",
- *                               ),
- * },
- * examples = {
- * {@literal @}Example(syntax = "sample query with Source annotation that explain how extension use in Siddhi."
- *                              description =" The description of the given example's query."
- *                      ),
- * }
- * )
- * </code></pre>
- */
-
+ * Extension to the WSO2 Stream Processor to retrieve Database Changes.
+ **/
 @Extension(
         name = "cdc",
         namespace = "source",
-        description = "A user can get real time change data events(INSERT, UPDATE, DELETE) with row data with cdc source",
+        description = "A user can get real time change data events(INSERT, UPDATE, DELETE) with row data with cdc " +
+                "source",
         parameters = {
-                @Parameter(name = "mode",
-                        description = "The change data capturing mode, specifies the database and the change data obtaining methodology",
+                @Parameter(name = "url",
+                        description = "Connection url to the database." +
+                                "use format:" +
+                                "for mysql--> jdbc:mysql://<username>:<password>@<host>:<port>/<db_name> " +
+                                "for oracle--> jdbc:oracle:<driver>:<username>/<password>@<host>:<port>:<SID>",
                         type = DataType.STRING
                 ),
-                @Parameter(name = "username",
-                        description = "MySQL database username with mentioned privileges",
-                        type = DataType.STRING),
-                @Parameter(name = "password",
-                        description = "password for the username",
-                        type = DataType.STRING),
-                @Parameter(name = "host",
-                        description = "MySQL server host name",
-                        type = DataType.STRING),
-                @Parameter(name = "port",
-                        description = "MySQL server port number",
+                @Parameter(name = "name",
+                        description = "Unique name for the connector instance.",
                         optional = true,
                         type = DataType.STRING,
-                        defaultValue = "3306"
+                        defaultValue = "<SiddhiAppName>_<StreamName>"
+                ),
+                @Parameter(name = "offset.file.directory",
+                        description = "Path to store the file with the connector’s change data offsets.",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "path/to/wso2/sp/cdc/offset/SiddhiAppName"
+                ),
+                @Parameter(name = "offset.commit.policy",
+                        description = "The name of the Java class of the commit policy. When this policy triggers," +
+                                " data offsets will be flushed.",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "PeriodicCommitOffsetPolicy"
+                ),
+                @Parameter(name = "offset.flush.intervalms",
+                        description = "Time in milliseconds to flush offsets when the commit policy is set to File",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "60000"
+                ),
+                @Parameter(name = "offset.flush.timeout.ms",
+                        description = "Maximum number of milliseconds to wait for records to flush. On timeout," +
+                                " the offset data will restored to be commited in a future attempt.",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "5000"
+                ),
+                @Parameter(name = "database.history.file.directory",
+                        description = "Path to store database schema history changes.",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "path/to/wso2/sp/cdc/history/SiddhiAppName"
+                ),
+                @Parameter(name = "database.server.name",
+                        description = "Logical name that identifies and provides a namespace for the " +
+                                "particular database server",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "host:_port_"
+                ),
+                @Parameter(name = "database.server.id",
+                        description = "For MySQL, a unique integer between 1 to 2^32 as the ID," +
+                                " This is used when joining MySQL database cluster to read binlog",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "random"
+                ),
+                @Parameter(name = "database.out.server.name",
+                        description = "Oracle Xstream outbound server name for Oracle. Required for Oracle database",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "xstrmServer"
+                ),
+                @Parameter(name = "database.dbname",
+                        description = "Name of the database to connect to. Must be the CDB name" +
+                                " when working with the CDB + PDB model.",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "sid"
+                ),
+                @Parameter(name = "database.pdb.name",
+                        description = "Name of the PDB to connect to. Required when working with the CDB + PDB model.",
+                        optional = true,
+                        type = DataType.STRING,
+                        defaultValue = "ORCLPDB1"
                 ),
         },
         examples = {
@@ -100,6 +114,7 @@ import java.util.Map;
 // for more information refer https://wso2.github.io/siddhi/documentation/siddhi-4.0/#sources
 public class CdcSource extends Source {
 
+    private static final Logger LOG = Logger.getLogger(CdcSource.class);
     /**
      * The initialization method for {@link Source}, will be called before other methods. It used to validate
      * all configurations and to get initial values.
@@ -112,25 +127,31 @@ public class CdcSource extends Source {
      * related utility functions.
      */
 
-    private static final String mode = "mode";
-    private static final String username = "username";
-    private static final String password = "password";
-    private static final String host = "host";
-    private static final String port = "port";
+    private String url = "url";
+    private String username = "username";
+    private String password = "password";
+    private String host = "host";
+    private String port = "port";
 
     @Override
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder,
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
 
+        //siddhiAppContext.getName(); //to get the Siddhi app name
 
-        //just a little code snippet to test whether the extension works.
-        if (mode.equals("mysqlBinLog")) {
-            System.out.println("you gave inputs, " + username + password + host + port);
-        } else {
-            throw new SiddhiAppCreationException("Currently mode only supports 'mysqlBinLog'");
-        }
+        this.url = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_CONNECTION_URL);
+        String[] urlElements = url.split(":");
 
+
+//        String url = "jdbc:mysql://localhost:3306/SimpleDB";
+        String cleanURI = url.substring(5);
+
+//        sourceEventListener.getStreamDefinition().getId(); //to get the siddhi stream id (possibly the name)
+
+        URI uri = URI.create(cleanURI);
+
+        LOG.info("you have given database " + uri.getScheme() + " host " + uri.getHost() + " port " + uri.getPort());
     }
 
     /**
