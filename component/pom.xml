@@ -67,6 +67,18 @@
             <artifactId>mysql-binlog-connector-java</artifactId>
             <version>0.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.wso2.extension.siddhi.map.keyvalue</groupId>
+            <artifactId>siddhi-map-keyvalue</artifactId>
+            <version>1.0.13</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.shyiko</groupId>
+            <artifactId>mysql-binlog-connector-java</artifactId>
+            <version>0.13.0</version>
+        </dependency>
 
     </dependencies>
     <build>
@@ -79,6 +91,7 @@
                         <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <argLine>${surefireArgLine} -ea -Xmx512m</argLine>
+
                 </configuration>
             </plugin>
             <plugin>
@@ -94,6 +107,7 @@
                         <configuration>
                             <destFile>${basedir}/target/coverage-reports/jacoco.exec</destFile>
                             <propertyName>surefireArgLine</propertyName>
+
                         </configuration>
                     </execution>
                     <execution>
@@ -130,9 +144,11 @@
                             {maven-resources}
                         </Include-Resource>
                     </instructions>
+
                 </configuration>
             </plugin>
             <plugin>
+
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>

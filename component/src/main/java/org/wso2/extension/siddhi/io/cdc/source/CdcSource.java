@@ -1,6 +1,7 @@
 package org.wso2.extension.siddhi.io.cdc.source;
 
 import org.apache.log4j.Logger;
+import org.wso2.extension.siddhi.io.cdc.util.ChangeDataCapture;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
@@ -12,7 +13,6 @@ import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
 
-import java.net.URI;
 import java.util.Map;
 
 /**
@@ -29,6 +29,16 @@ import java.util.Map;
                                 "use format:" +
                                 "for mysql--> jdbc:mysql://<username>:<password>@<host>:<port>/<db_name> " +
                                 "for oracle--> jdbc:oracle:<driver>:<username>/<password>@<host>:<port>:<SID>",
+                        type = DataType.STRING
+                ),
+                @Parameter(
+                        name = "table.name",
+                        description = "Name of the table which needs to be monitored for data changes",
+                        type = DataType.STRING
+                ),
+                @Parameter(
+                        name = "operation",
+                        description = "interested change event name. insert, update or delete",
                         type = DataType.STRING
                 ),
                 @Parameter(name = "name",
@@ -115,43 +125,45 @@ import java.util.Map;
 public class CdcSource extends Source {
 
     private static final Logger LOG = Logger.getLogger(CdcSource.class);
+
     /**
      * The initialization method for {@link Source}, will be called before other methods. It used to validate
      * all configurations and to get initial values.
      *
      * @param sourceEventListener After receiving events, the source should trigger onEvent() of this listener.
-     * Listener will then pass on the events to the appropriate mappers for processing .
+     *                            Listener will then pass on the events to the appropriate mappers for processing .
      * @param optionHolder        Option holder containing static configuration related to the {@link Source}
      * @param configReader        ConfigReader is used to read the {@link Source} related system configuration.
      * @param siddhiAppContext    the context of the {@link org.wso2.siddhi.query.api.SiddhiApp} used to get Siddhi
-     * related utility functions.
+     *                            related utility functions.
      */
 
-    private String url = "url";
-    private String username = "username";
-    private String password = "password";
-    private String host = "host";
-    private String port = "port";
 
     @Override
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder,
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
 
-        //siddhiAppContext.getName(); //to get the Siddhi app name
+        String siddhiAppName = siddhiAppContext.getName();
+        String streamName = sourceEventListener.getStreamDefinition().getId();
+        String url = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_CONNECTION_URL);
+        String offsetFileDirectory = "/home/chathuranga/mysqlLogs/";
+        String commitPolicy = "PeriodicCommitOffsetPolicy";
+        int flushInterval = 30000;
+        int serverID = -1;
+        String serverName = "";
+        String tableName = "login";
 
-        this.url = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_CONNECTION_URL);
-        String[] urlElements = url.split(":");
 
-
-//        String url = "jdbc:mysql://localhost:3306/SimpleDB";
-        String cleanURI = url.substring(5);
-
-//        sourceEventListener.getStreamDefinition().getId(); //to get the siddhi stream id (possibly the name)
-
-        URI uri = URI.create(cleanURI);
-
-        LOG.info("you have given database " + uri.getScheme() + " host " + uri.getHost() + " port " + uri.getPort());
+        ChangeDataCapture changeDataCapture = new ChangeDataCapture();
+        if (changeDataCapture.setConfig(url, tableName, offsetFileDirectory, siddhiAppName, streamName, commitPolicy,
+                flushInterval, serverID, serverName, "", "", "")) {
+            LOG.info("Config accepted!");
+            changeDataCapture.setSourceEventListener(sourceEventListener);
+            changeDataCapture.captureChanges();
+        } else {
+            LOG.error("Config rejected!");
+        }
     }
 
     /**
@@ -217,6 +229,9 @@ public class CdcSource extends Source {
      */
     @Override
     public Map<String, Object> currentState() {
+//        Map<String, Object> currentState = new HashMap<>();
+//        currentState.put("abc", "abcvalue");
+//        return currentState;
         return null;
     }
 
