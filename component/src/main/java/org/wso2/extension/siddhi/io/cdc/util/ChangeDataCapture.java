@@ -9,6 +9,8 @@ import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Initiate and get MySQL database changes.
@@ -19,27 +21,108 @@ public class ChangeDataCapture {
     Configuration config;
     SourceEventListener sourceEventListener;
 
-    public void setSourceEventListener(SourceEventListener sourceEventListener) {
-        this.sourceEventListener = sourceEventListener;
-    }
-
     /*
      *Extract the details from the connection url and return as an array.
-     * The element order:
-     * 0: username
-     * 1: password
-     * 2: host
-     * 3: port
-     * 4: database name:
-     * 5: SID
-     * 6: driver
+     *
+     * mysql===> jdbc:mysql://hostname:port/testdb
+     * oracle==> jdbc:oracle:thin:@hostname:port:SID
+     *                  or
+     *           jdbc:oracle:thin:@hostname:port/SERVICE
+     * sqlserver => jdbc:sqlserver://hostname:port;databaseName=testdb
+     * postgres ==> jdbc:postgresql://hostname:port/testdb
+     *
+     *
+     * The elements in the hash-map order:
+     * host
+     * port
+     * database name:
+     * SID
+     * driver
      * */
-    private String[] extractDetails(String url) {
-        String[] details = new String[7];
+    public static Map<String, Object> extractDetails(String url) {
+        Map<String, Object> details = new HashMap<>();
+        String host;
+        int port;
+        String database;
+        String driver;
+        String sid;
+        String service;
 
-        
+        String[] splittedURL = url.split(":");
+        if (!splittedURL[0].equals("jdbc")) {
+            throw new IllegalArgumentException("Invalid JDBC url.");
+        } else {
+            if (splittedURL[1].equals("mysql")) {
+                //pattern match for mysql
 
+                String regex = "jdbc:mysql://(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
+                Pattern p = Pattern.compile(regex);
+                Matcher matcher = p.matcher(url);
+                if (matcher.find()) {
+                    host = matcher.group(1);
+                    port = Integer.valueOf(matcher.group(2));
+                    database = matcher.group(3);
+
+                } else {
+                    // handle error appropriately
+                    throw new IllegalArgumentException("Invalid JDBC url.");
+                }
+
+
+                details.put("database", database);
+
+            } else if (splittedURL[1].equals("oracle")) {
+                //pattern match for oracle
+                //jdbc:oracle:thin:@hostname:port:SID
+
+
+                String regex = "jdbc:oracle:(thin|oci):@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):" +
+                        "(\\d++):(\\w*)";
+                Pattern p = Pattern.compile(regex);
+
+                Matcher matcher = p.matcher(url);
+                if (matcher.find()) {
+                    driver = matcher.group(1);
+                    host = matcher.group(2);
+                    port = Integer.valueOf(matcher.group(3));
+                    sid = matcher.group(4);
+
+                    details.put("sid", sid);
+
+                } else {
+                    //check for the service type url
+                    String regexService = "jdbc:oracle:(thin|oci):" +
+                            "@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
+                    Pattern patternService = Pattern.compile(regexService);
+
+                    Matcher matcherService = patternService.matcher(url);
+                    if (matcherService.find()) {
+                        driver = matcherService.group(1);
+                        host = matcherService.group(2);
+                        port = Integer.valueOf(matcherService.group(3));
+                        service = matcherService.group(4);
+
+                    } else {
+                        // handle error appropriately
+                        throw new IllegalArgumentException("Invalid JDBC url for oracle service pattern.");
+                    }
+                    details.put("service", service);
+                }
+
+                details.put("driver", driver);
+
+            } else {
+                //for now checking for mysql and oracle
+                throw new IllegalArgumentException("Invalid JDBC url.");
+            }
+            details.put("host", host);
+            details.put("port", port);
+        }
         return details;
+    }
+
+    public void setSourceEventListener(SourceEventListener sourceEventListener) {
+        this.sourceEventListener = sourceEventListener;
     }
 
     public boolean setConfig(String url, String tableName, String offsetFileDirectory, String siddhiAppName,
@@ -148,10 +231,10 @@ public class ChangeDataCapture {
     private void handleEvent(SourceRecord sourceRecord) {
 //        logger.info("Source record received from debezium: " + sourceRecord); //print the source record.
 
-        Map<String, Object> hashMap = new HashMap<>();
+        HashMap<String, Object> hashMap = new HashMap<>();
         hashMap.put("operation", "This is the operation: INSERT");
         hashMap.put("raw_details", "This is raw details");
-        sourceEventListener.onEvent(hashMap, null);
+        sourceEventListener.onEvent(hashMap, new String[1]);
     }
 
     private static class MyExecutor implements Executor {

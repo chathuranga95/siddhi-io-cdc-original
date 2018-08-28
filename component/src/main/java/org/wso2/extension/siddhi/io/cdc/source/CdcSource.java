@@ -13,6 +13,7 @@ import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -174,7 +175,7 @@ public class CdcSource extends Source {
      */
     @Override
     public Class[] getOutputEventClasses() {
-        return new Class[0];
+        return new Class[]{HashMap.class};
     }
 
     /**

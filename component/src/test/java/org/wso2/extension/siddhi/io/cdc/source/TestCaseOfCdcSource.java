@@ -9,7 +9,12 @@ import org.wso2.siddhi.core.query.output.callback.QueryCallback;
 import org.wso2.siddhi.core.util.EventPrinter;
 import org.wso2.siddhi.core.util.SiddhiTestHelper;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.testng.AssertJUnit.assertEquals;
+import static org.wso2.extension.siddhi.io.cdc.util.ChangeDataCapture.extractDetails;
 
 public class TestCaseOfCdcSource {
     // If you will know about this related testcase,
@@ -17,6 +22,59 @@ public class TestCaseOfCdcSource {
     private static final Logger LOG = Logger.getLogger(TestCaseOfCdcSource.class);
 
     @Test
+    public void testTwitterStreaming2() {
+
+        String url1 = "jdbc:oracle:thin:@localhost:1521/oracle";
+
+
+        Map<String, Object> details = extractDetails(url1);
+
+        Map<String, Object> expectedDetails = new HashMap<>();
+        expectedDetails.put("host", "localhost");
+        expectedDetails.put("port", 1521);
+        expectedDetails.put("service", "oracle");
+        expectedDetails.put("driver", "thin");
+
+        assertEquals(expectedDetails, details);
+
+    }
+
+    @Test
+    public void testTwitterStreaming3() {
+
+        String url1 = "jdbc:oracle:thin:@localhost:1522:XE";
+
+
+        Map<String, Object> details = extractDetails(url1);
+
+        Map<String, Object> expectedDetails = new HashMap<>();
+        expectedDetails.put("host", "localhost");
+        expectedDetails.put("port", 1522);
+        expectedDetails.put("sid", "XE");
+        expectedDetails.put("driver", "thin");
+
+        assertEquals(expectedDetails, details);
+
+    }
+
+    @Test
+    public void testTwitterStreaming4() {
+
+        String url1 = "jdbc:mysql://172.17.0.1:3306/testdb";
+
+
+        Map<String, Object> details = extractDetails(url1);
+
+        Map<String, Object> expectedDetails = new HashMap<>();
+        expectedDetails.put("host", "172.17.0.1");
+        expectedDetails.put("port", 3306);
+        expectedDetails.put("database", "testdb");
+
+        assertEquals(expectedDetails, details);
+
+    }
+
+
     public void testTwitterStreaming1() throws InterruptedException {
         LOG.info("------------------------------------------------------------------------------------------------");
 
