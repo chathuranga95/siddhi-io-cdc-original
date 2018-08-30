@@ -2,6 +2,7 @@ package org.wso2.extension.siddhi.io.cdc.source;
 
 import org.apache.log4j.Logger;
 import org.testng.annotations.Test;
+import org.wso2.extension.siddhi.io.cdc.util.Util;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
@@ -14,7 +15,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.AssertJUnit.assertEquals;
-import static org.wso2.extension.siddhi.io.cdc.util.ChangeDataCapture.extractDetails;
 
 public class TestCaseOfCdcSource {
     // If you will know about this related testcase,
@@ -26,12 +26,12 @@ public class TestCaseOfCdcSource {
 
         String url1 = "jdbc:oracle:thin:@localhost:1521/oracle";
 
+        Map<String, String> details = Util.extractDetails(url1);
 
-        Map<String, Object> details = extractDetails(url1);
-
-        Map<String, Object> expectedDetails = new HashMap<>();
+        Map<String, String> expectedDetails = new HashMap<>();
         expectedDetails.put("host", "localhost");
-        expectedDetails.put("port", 1521);
+        expectedDetails.put("schema", "oracle");
+        expectedDetails.put("port", "1521");
         expectedDetails.put("service", "oracle");
         expectedDetails.put("driver", "thin");
 
@@ -44,12 +44,12 @@ public class TestCaseOfCdcSource {
 
         String url1 = "jdbc:oracle:thin:@localhost:1522:XE";
 
+        Map<String, String> details = Util.extractDetails(url1);
 
-        Map<String, Object> details = extractDetails(url1);
-
-        Map<String, Object> expectedDetails = new HashMap<>();
+        Map<String, String> expectedDetails = new HashMap<>();
+        expectedDetails.put("schema", "oracle");
         expectedDetails.put("host", "localhost");
-        expectedDetails.put("port", 1522);
+        expectedDetails.put("port", "1522");
         expectedDetails.put("sid", "XE");
         expectedDetails.put("driver", "thin");
 
@@ -62,19 +62,19 @@ public class TestCaseOfCdcSource {
 
         String url1 = "jdbc:mysql://172.17.0.1:3306/testdb";
 
+        Map<String, String> details = Util.extractDetails(url1);
 
-        Map<String, Object> details = extractDetails(url1);
-
-        Map<String, Object> expectedDetails = new HashMap<>();
+        Map<String, String> expectedDetails = new HashMap<>();
+        expectedDetails.put("schema", "mysql");
         expectedDetails.put("host", "172.17.0.1");
-        expectedDetails.put("port", 3306);
+        expectedDetails.put("port", "3306");
         expectedDetails.put("database", "testdb");
 
         assertEquals(expectedDetails, details);
 
     }
 
-
+    @Test
     public void testTwitterStreaming1() throws InterruptedException {
         LOG.info("------------------------------------------------------------------------------------------------");
 
@@ -82,9 +82,11 @@ public class TestCaseOfCdcSource {
 
         String inStreamDefinition = "" +
                 "@app:name('cdcTesting')" +
-                "@source(type = 'cdc' , url = 'option_value', table.name = 'login', operation = 'insert'," +
-                " @map(type='keyvalue', fail.on.missing.attribute = 'false'))" +
-                "define stream istm (operation String, raw_details String);";
+                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB', username = 'root'," +
+                " password = '1234', table.name = 'login'," +
+                " operation = 'insert', " +
+                " @map(type='keyvalue'))" +
+                "define stream istm (id string, name string);";
         String query = ("@info(name = 'query1') " +
                 "from istm " +
                 "select *  " +

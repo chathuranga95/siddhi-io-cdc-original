@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/component/siddhi-io-cdc.iml" filepath="$PROJECT_DIR$/component/siddhi-io-cdc.iml" />
-      <module fileurl="file://$PROJECT_DIR$/siddhi-io-cdc-parent.iml" filepath="$PROJECT_DIR$/siddhi-io-cdc-parent.iml" />
     </modules>
   </component>
 </project>

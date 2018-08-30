@@ -1,17 +1,18 @@
 package org.wso2.extension.siddhi.io.cdc.source;
 
 import org.apache.log4j.Logger;
-import org.wso2.extension.siddhi.io.cdc.util.ChangeDataCapture;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
 import org.wso2.siddhi.annotation.util.DataType;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
 import org.wso2.siddhi.core.exception.ConnectionUnavailableException;
+import org.wso2.siddhi.core.exception.SiddhiAppCreationException;
 import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
+import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,11 +26,21 @@ import java.util.Map;
         description = "A user can get real time change data events(INSERT, UPDATE, DELETE) with row data with cdc " +
                 "source",
         parameters = {
+                @Parameter(
+                        name = "username",
+                        description = "Username as mentioned in the configuration for the database schema",
+                        type = DataType.STRING
+                ),
+                @Parameter(
+                        name = "password",
+                        description = "Password for the user",
+                        type = DataType.STRING
+                ),
                 @Parameter(name = "url",
                         description = "Connection url to the database." +
                                 "use format:" +
-                                "for mysql--> jdbc:mysql://<username>:<password>@<host>:<port>/<db_name> " +
-                                "for oracle--> jdbc:oracle:<driver>:<username>/<password>@<host>:<port>:<SID>",
+                                "for mysql--> jdbc:mysql://<host>:<port>/<database_name> " +
+                                "for oracle--> jdbc:oracle:<driver>:@<host>:<port>:<SID>",
                         type = DataType.STRING
                 ),
                 @Parameter(
@@ -85,13 +96,13 @@ import java.util.Map;
                                 "particular database server",
                         optional = true,
                         type = DataType.STRING,
-                        defaultValue = "host:_port_"
+                        defaultValue = "<host>:<port>"
                 ),
                 @Parameter(name = "database.server.id",
                         description = "For MySQL, a unique integer between 1 to 2^32 as the ID," +
                                 " This is used when joining MySQL database cluster to read binlog",
                         optional = true,
-                        type = DataType.STRING,
+                        type = {DataType.STRING},
                         defaultValue = "random"
                 ),
                 @Parameter(name = "database.out.server.name",
@@ -105,7 +116,7 @@ import java.util.Map;
                                 " when working with the CDB + PDB model.",
                         optional = true,
                         type = DataType.STRING,
-                        defaultValue = "sid"
+                        defaultValue = "<sid>"
                 ),
                 @Parameter(name = "database.pdb.name",
                         description = "Name of the PDB to connect to. Required when working with the CDB + PDB model.",
@@ -126,7 +137,22 @@ import java.util.Map;
 public class CdcSource extends Source {
 
     private static final Logger LOG = Logger.getLogger(CdcSource.class);
-
+    private int flushInterval;
+    private int serverID;
+    private String serverName;
+    private String outboundServerName;
+    private String dbName;
+    private String pdbName;
+    private String siddhiAppName;
+    private String url;
+    private String streamName;
+    private String tableName;
+    private String username;
+    private String password;
+    private String operation;
+    private String offsetFileDirectory;
+    private String commitPolicy;
+    private ChangeDataCapture changeDataCapture;
     /**
      * The initialization method for {@link Source}, will be called before other methods. It used to validate
      * all configurations and to get initial values.
@@ -145,25 +171,51 @@ public class CdcSource extends Source {
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
 
-        String siddhiAppName = siddhiAppContext.getName();
-        String streamName = sourceEventListener.getStreamDefinition().getId();
-        String url = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_CONNECTION_URL);
-        String offsetFileDirectory = "/home/chathuranga/mysqlLogs/";
-        String commitPolicy = "PeriodicCommitOffsetPolicy";
-        int flushInterval = 30000;
-        int serverID = -1;
-        String serverName = "";
-        String tableName = "login";
+        siddhiAppName = siddhiAppContext.getName();
+        streamName = sourceEventListener.getStreamDefinition().getId();
 
+        //initialize mandatory parameters
+        url = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_CONNECTION_URL,
+                CDCSourceConstants.EMPTY_STRING);
+        tableName = optionHolder.validateAndGetStaticValue(CDCSourceConstants.TABLE_NAME,
+                CDCSourceConstants.EMPTY_STRING);
+        username = optionHolder.validateAndGetStaticValue(CDCSourceConstants.USERNAME,
+                CDCSourceConstants.EMPTY_STRING);
+        password = optionHolder.validateAndGetStaticValue(CDCSourceConstants.PASSWORD,
+                CDCSourceConstants.EMPTY_STRING);
+        operation = optionHolder.validateAndGetStaticValue(CDCSourceConstants.OPERATION,
+                CDCSourceConstants.EMPTY_STRING);
 
-        ChangeDataCapture changeDataCapture = new ChangeDataCapture();
-        if (changeDataCapture.setConfig(url, tableName, offsetFileDirectory, siddhiAppName, streamName, commitPolicy,
-                flushInterval, serverID, serverName, "", "", "")) {
+        //initialize optional parameters
+        //TODO: get the wso2 carbon home and assign to the default value
+        offsetFileDirectory = optionHolder.validateAndGetStaticValue(CDCSourceConstants.OFFSET_FILE_DIRECTORY,
+                "/home/chathuranga/mysqlLogs/");
+        commitPolicy = optionHolder.validateAndGetStaticValue(CDCSourceConstants.OFFSET_COMMIT_POLICY,
+                "PeriodicCommitOffsetPolicy");
+        flushInterval = Integer.parseInt(optionHolder.validateAndGetStaticValue(
+                CDCSourceConstants.OFFSET_FLUSH_INTERVALMS, "60000"));
+        serverID = Integer.parseInt(optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_SERVER_ID,
+                "-1"));
+        serverName = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_SERVER_NAME,
+                CDCSourceConstants.EMPTY_STRING);
+        outboundServerName = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_OUT_SERVER_NAME,
+                "xstrmServer");
+        dbName = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_DBNAME,
+                CDCSourceConstants.EMPTY_STRING);
+        pdbName = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_PDB_NAME,
+                CDCSourceConstants.EMPTY_STRING);
+        validateParameter();
+
+        this.changeDataCapture = new ChangeDataCapture();
+        if (changeDataCapture.setConfig(username, password, url, tableName, offsetFileDirectory, siddhiAppName,
+                streamName, commitPolicy, flushInterval, serverID, serverName,
+                outboundServerName, dbName, pdbName)) {
             LOG.info("Config accepted!");
             changeDataCapture.setSourceEventListener(sourceEventListener);
-            changeDataCapture.captureChanges();
+        //    changeDataCapture.captureChanges(operation);
         } else {
             LOG.error("Config rejected!");
+            throw new SiddhiAppCreationException("Configuration rejected!");
         }
     }
 
@@ -175,7 +227,7 @@ public class CdcSource extends Source {
      */
     @Override
     public Class[] getOutputEventClasses() {
-        return new Class[]{HashMap.class};
+        return new Class[]{Map.class, HashMap.class};
     }
 
     /**
@@ -187,7 +239,7 @@ public class CdcSource extends Source {
      */
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
-
+        changeDataCapture.captureChanges(operation);
     }
 
     /**
@@ -246,6 +298,26 @@ public class CdcSource extends Source {
     @Override
     public void restoreState(Map<String, Object> map) {
 
+    }
+
+    private void validateParameter() {
+        //TODO: write parameter validation. throw the exceptions whenever needed.
+        if (url.isEmpty()) {
+            throw new SiddhiAppValidationException("url must be given.");
+        }
+        if (username.isEmpty()) {
+            throw new SiddhiAppValidationException("username must be given.");
+        }
+        if (password.isEmpty()) {
+            throw new SiddhiAppValidationException("password must be given.");
+        }
+        if (tableName.isEmpty()) {
+            throw new SiddhiAppValidationException("table.name must be given.");
+        }
+        if (!(operation.equals(CDCSourceConstants.INSERT) || operation.equals(CDCSourceConstants.UPDATE)
+                || operation.equals(CDCSourceConstants.DELETE))) {
+            throw new SiddhiAppValidationException("operation should be one of 'insert', 'update' or 'delete'");
+        }
     }
 }
 
