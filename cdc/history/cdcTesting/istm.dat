@@ -1,0 +1,6 @@
+{"source":{"server":"localhost:3306"},"position":{"file":"mysql-bin.000095","pos":2370,"snapshot":true},"ddl":"SET character_set_server=latin1, collation_server=latin1_swedish_ci;"}
+{"source":{"server":"localhost:3306"},"position":{"file":"mysql-bin.000095","pos":2370,"snapshot":true},"ddl":"DROP TABLE IF EXISTS `SimpleDB`.`login`"}
+{"source":{"server":"localhost:3306"},"position":{"file":"mysql-bin.000095","pos":2370,"snapshot":true},"databaseName":"SimpleDB","ddl":"DROP DATABASE IF EXISTS `SimpleDB`"}
+{"source":{"server":"localhost:3306"},"position":{"file":"mysql-bin.000095","pos":2370,"snapshot":true},"databaseName":"SimpleDB","ddl":"CREATE DATABASE `SimpleDB`"}
+{"source":{"server":"localhost:3306"},"position":{"file":"mysql-bin.000095","pos":2370,"snapshot":true},"databaseName":"SimpleDB","ddl":"USE `SimpleDB`"}
+{"source":{"server":"localhost:3306"},"position":{"file":"mysql-bin.000095","pos":2370,"snapshot":true},"databaseName":"SimpleDB","ddl":"CREATE TABLE `login` (\n  `id` varchar(5) DEFAULT NULL,\n  `name` varchar(20) DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=latin1"}
