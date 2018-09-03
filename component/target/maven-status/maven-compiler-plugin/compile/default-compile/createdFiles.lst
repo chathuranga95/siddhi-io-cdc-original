@@ -1,0 +1,7 @@
+org/wso2/extension/siddhi/io/cdc/source/CdcSource.class
+org/wso2/extension/siddhi/io/cdc/util/Util.class
+org/wso2/extension/siddhi/io/cdc/source/ChangeDataCapture$1.class
+org/wso2/extension/siddhi/io/cdc/source/ChangeDataCapture.class
+org/wso2/extension/siddhi/io/cdc/source/ChangeDataCapture$MyExecutor.class
+org/wso2/extension/siddhi/io/cdc/source/CDCSourceConstants.class
+META-INF/annotations/org.wso2.siddhi.annotation.Extension
