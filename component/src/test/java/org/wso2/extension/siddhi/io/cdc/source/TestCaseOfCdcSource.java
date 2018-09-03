@@ -22,7 +22,7 @@ public class TestCaseOfCdcSource {
     private static final Logger LOG = Logger.getLogger(TestCaseOfCdcSource.class);
 
     @Test
-    public void testTwitterStreaming2() {
+    public void urldetailExtractionOracle1() {
 
         String url1 = "jdbc:oracle:thin:@localhost:1521/oracle";
 
@@ -40,7 +40,7 @@ public class TestCaseOfCdcSource {
     }
 
     @Test
-    public void testTwitterStreaming3() {
+    public void urldetailExtractionOracle2() {
 
         String url1 = "jdbc:oracle:thin:@localhost:1522:XE";
 
@@ -58,7 +58,7 @@ public class TestCaseOfCdcSource {
     }
 
     @Test
-    public void testTwitterStreaming4() {
+    public void urldetailExtractionMysql1() {
 
         String url1 = "jdbc:mysql://172.17.0.1:3306/testdb";
 
@@ -75,15 +75,69 @@ public class TestCaseOfCdcSource {
     }
 
     @Test
-    public void testTwitterStreaming1() throws InterruptedException {
+    public void urldetailExtractionMysql2() {
+
+        String url1 = "jdbc:mysql://localhost:3306/testdb";
+
+        Map<String, String> details = Util.extractDetails(url1);
+
+        Map<String, String> expectedDetails = new HashMap<>();
+        expectedDetails.put("schema", "mysql");
+        expectedDetails.put("host", "localhost");
+        expectedDetails.put("port", "3306");
+        expectedDetails.put("database", "testdb");
+
+        assertEquals(expectedDetails, details);
+
+    }
+
+    @Test
+    public void cdcInsertOperationMysql() throws InterruptedException {
         LOG.info("------------------------------------------------------------------------------------------------");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
         String inStreamDefinition = "" +
                 "@app:name('cdcTesting')" +
-                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB', username = 'root'," +
+                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
                 " password = '1234', table.name = 'login'," +
+                " operation = 'insert', " +
+                " @map(type='keyvalue'))" +
+                "define stream istm (id string, name string);";
+        String query = ("@info(name = 'query1') " +
+                "from istm " +
+                "select *  " +
+                "insert into outputStream;");
+
+        SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition +
+                query);
+
+        siddhiAppRuntime.addCallback("query1", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                EventPrinter.print(timeStamp, inEvents, removeEvents);
+                for (Event event : inEvents) {
+                    LOG.info("received event: " + event);
+                }
+            }
+        });
+
+        siddhiAppRuntime.start();
+        SiddhiTestHelper.waitForEvents(50, 1, new AtomicInteger(50), 10000);
+
+        siddhiAppRuntime.shutdown();
+    }
+
+    @Test
+    public void cdcInsertOperationOracle() throws InterruptedException {
+        LOG.info("------------------------------------------------------------------------------------------------");
+
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        String inStreamDefinition = "" +
+                "@app:name('cdcTesting')" +
+                "@source(type = 'cdc' , url = 'jdbc:oracle:thin:@localhost:1521:XE', username = 'root'," +
+                " password = '1234', table.name = 'login', database.out.server.name = 'xstrm'," +
                 " operation = 'insert', " +
                 " @map(type='keyvalue'))" +
                 "define stream istm (id string, name string);";

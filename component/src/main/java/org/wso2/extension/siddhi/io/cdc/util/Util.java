@@ -3,7 +3,9 @@ package org.wso2.extension.siddhi.io.cdc.util;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
+import org.wso2.extension.siddhi.io.cdc.source.CdcSource;
 
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +28,11 @@ public class Util {
      * sqlserver => jdbc:sqlserver://hostname:port;databaseName=testdb
      * postgres ==> jdbc:postgresql://hostname:port/testdb
      * <p>
-     * <p>
-     * The elements in the hash-map:
+     * Hash map will include a subset of following elements according to the schema:
      * schema
      * host
      * port
-     * database name:
+     * database name
      * SID
      * driver
      */
@@ -48,68 +49,70 @@ public class Util {
         if (!splittedURL[0].equals("jdbc")) {
             throw new IllegalArgumentException("Invalid JDBC url.");
         } else {
-            if (splittedURL[1].equals("mysql")) {
+            switch (splittedURL[1]) {
+                case "mysql": {
 
-                details.put("schema", "mysql");
+                    details.put("schema", "mysql");
 
-                String regex = "jdbc:mysql://(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
-                Pattern p = Pattern.compile(regex);
-                Matcher matcher = p.matcher(url);
-                if (matcher.find()) {
-                    host = matcher.group(1);
-                    port = Integer.parseInt(matcher.group(2));
-                    database = matcher.group(3);
-
-                } else {
-                    // handle error appropriately
-                    throw new IllegalArgumentException("Invalid JDBC url.");
-                }
-
-
-                details.put("database", database);
-
-            } else if (splittedURL[1].equals("oracle")) {
-
-                details.put("schema", "oracle");
-
-                String regex = "jdbc:oracle:(thin|oci):@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):" +
-                        "(\\d++):(\\w*)";
-                Pattern p = Pattern.compile(regex);
-
-                Matcher matcher = p.matcher(url);
-                if (matcher.find()) {
-                    driver = matcher.group(1);
-                    host = matcher.group(2);
-                    port = Integer.parseInt(matcher.group(3));
-                    sid = matcher.group(4);
-
-                    details.put("sid", sid);
-
-                } else {
-                    //check for the service type url
-                    String regexService = "jdbc:oracle:(thin|oci):" +
-                            "@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
-                    Pattern patternService = Pattern.compile(regexService);
-
-                    Matcher matcherService = patternService.matcher(url);
-                    if (matcherService.find()) {
-                        driver = matcherService.group(1);
-                        host = matcherService.group(2);
-                        port = Integer.parseInt(matcherService.group(3));
-                        service = matcherService.group(4);
+                    String regex = "jdbc:mysql://(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
+                    Pattern p = Pattern.compile(regex);
+                    Matcher matcher = p.matcher(url);
+                    if (matcher.find()) {
+                        host = matcher.group(1);
+                        port = Integer.parseInt(matcher.group(2));
+                        database = matcher.group(3);
 
                     } else {
-                        // handle error appropriately
-                        throw new IllegalArgumentException("Invalid JDBC url for oracle service pattern.");
+                        throw new IllegalArgumentException("Invalid JDBC url.");
                     }
-                    details.put("service", service);
+
+                    details.put("database", database);
+
+                    break;
                 }
+                case "oracle": {
 
-                details.put("driver", driver);
+                    details.put("schema", "oracle");
 
-            } else {
-                //for now checking for mysql and oracle
-                throw new IllegalArgumentException("Invalid JDBC url.");
+                    String regex = "jdbc:oracle:(thin|oci):@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):" +
+                            "(\\d++):(\\w*)";
+                    Pattern p = Pattern.compile(regex);
+
+                    Matcher matcher = p.matcher(url);
+                    if (matcher.find()) {
+                        driver = matcher.group(1);
+                        host = matcher.group(2);
+                        port = Integer.parseInt(matcher.group(3));
+                        sid = matcher.group(4);
+
+                        details.put("sid", sid);
+
+                    } else {
+                        //check for the service type url
+                        String regexService = "jdbc:oracle:(thin|oci):" +
+                                "@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
+                        Pattern patternService = Pattern.compile(regexService);
+
+                        Matcher matcherService = patternService.matcher(url);
+                        if (matcherService.find()) {
+                            driver = matcherService.group(1);
+                            host = matcherService.group(2);
+                            port = Integer.parseInt(matcherService.group(3));
+                            service = matcherService.group(4);
+
+                        } else {
+                            throw new IllegalArgumentException("Invalid oracle JDBC url.");
+                        }
+                        details.put("service", service);
+                    }
+
+                    details.put("driver", driver);
+
+                    break;
+                }
+                default:
+                    //for now checking for mysql and oracle
+                    throw new IllegalArgumentException("Invalid JDBC url.");
             }
             details.put("host", host);
             details.put("port", Integer.toString(port));
@@ -136,18 +139,24 @@ public class Util {
         }
 
         //get the field names of the table
-        if (op.equals("c") || op.equals("u")) {
-            rawDetails = (Struct) record.get("after");
-        } else if (op.equals("d")) {
-            rawDetails = (Struct) record.get("before");
-        } else {
-            return detailsMap;
+        switch (op) {
+            case "c":
+            case "u":
+                rawDetails = (Struct) record.get("after");
+                break;
+            case "d":
+                rawDetails = (Struct) record.get("before");
+                break;
+            default:
+                return detailsMap;
         }
 
         List<Field> fields = rawDetails.schema().fields();
         for (Field key : fields) {
             fieldNames.add(key.name());
         }
+
+        //TODO: just drop it if the user is not asking
 
         if (operation.equals("insert") && op.equals("c")) {
 
@@ -177,6 +186,33 @@ public class Util {
         }
 
         return detailsMap;
+    }
+
+    /**
+     * Get the WSO2 Stream Processor's local path.
+     */
+    // TODO: 8/31/18 discuss this with suho
+    public static String getStreamProcessorPath() {
+        String path = CdcSource.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        String decodedPath;
+        try {
+            decodedPath = URLDecoder.decode(path, "UTF-8");
+        } catch (Exception ex) {
+            return "";
+        }
+
+        int x = decodedPath.length() - 1;
+        int folderUpCharacterCount = 0;
+        int counter = 0;
+        while (folderUpCharacterCount < 4) {
+            if (Character.toString(decodedPath.charAt(x - counter)).equals("/")) {
+                folderUpCharacterCount++;
+            }
+            counter++;
+        }
+
+        decodedPath = decodedPath.substring(0, x - counter + 2);
+        return decodedPath;
     }
 
 }

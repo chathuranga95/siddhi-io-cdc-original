@@ -5,7 +5,6 @@
 <suite name="Siddhi-Io-Cdc-Test-Suite">
     <test name="Siddhi-io-cdc-tests" enabled="true" preserve-order="true" parallel="false">
         <classes>
-            <class name="org.wso2.extension.siddhi.io.cdc.sink.TestCaseOfCdcSink"/>
             <class name="org.wso2.extension.siddhi.io.cdc.source.TestCaseOfCdcSource"/>
         </classes>
     </test>
