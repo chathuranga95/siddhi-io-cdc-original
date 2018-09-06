@@ -9,6 +9,7 @@ import org.wso2.siddhi.core.event.Event;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
 import org.wso2.siddhi.core.util.EventPrinter;
 import org.wso2.siddhi.core.util.SiddhiTestHelper;
+import org.wso2.siddhi.core.util.config.InMemoryConfigManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +20,7 @@ import static org.testng.AssertJUnit.assertEquals;
 public class TestCaseOfCdcSource {
     // If you will know about this related testcase,
     //refer https://github.com/wso2-extensions/siddhi-io-file/blob/master/component/src/test
-    private static final Logger LOG = Logger.getLogger(TestCaseOfCdcSource.class);
+    private static final Logger logger = Logger.getLogger(TestCaseOfCdcSource.class);
 
     @Test
     public void urldetailExtractionOracle1() {
@@ -93,17 +94,61 @@ public class TestCaseOfCdcSource {
 
     @Test
     public void cdcInsertOperationMysql() throws InterruptedException {
-        LOG.info("------------------------------------------------------------------------------------------------");
+        logger.info("------------------------------------------------------------------------------------------------");
+
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        String inStreamDefinition = "" +
+                "@app:name('cdcTesting')" +
+                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB', " +
+                " username = 'root'," +
+                " password = '1234', " +
+                "table.name = 'login', " +
+                " offsets.commit.policy = 'AlwaysCommitOffsetPolicy'," +
+                " operation = 'insert', " +
+                " @map(type='keyvalue'))" +
+                "define stream istm (id string, name string);";
+        String query = ("@info(name = 'query1') " +
+                "from istm " +
+                "select *  " +
+                "insert into outputStream;");
+
+        SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition +
+                query);
+
+        siddhiManager.setConfigManager(new InMemoryConfigManager());
+
+        siddhiAppRuntime.addCallback("query1", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                EventPrinter.print(timeStamp, inEvents, removeEvents);
+                for (Event event : inEvents) {
+                    logger.info("received event: " + event);
+                }
+            }
+        });
+
+        siddhiAppRuntime.start();
+        SiddhiTestHelper.waitForEvents(50, 1, new AtomicInteger(1), 10000);
+
+        siddhiAppRuntime.shutdown();
+    }
+
+
+    @Test
+    public void cdcDeleteOperationMysql() throws InterruptedException {
+        logger.info("------------------------------------------------------------------------------------------------");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
         String inStreamDefinition = "" +
                 "@app:name('cdcTesting')" +
                 "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
-                " password = '1234', table.name = 'login'," +
-                " operation = 'insert', " +
+                " password = '1234', table.name = 'login', " +
+                " offsets.commit.policy = 'AlwaysCommitOffsetPolicy'," +
+                " operation = 'delete', database.server.id = '1300'," +
                 " @map(type='keyvalue'))" +
-                "define stream istm (id string, name string);";
+                "define stream istm (before_id string, before_name string);";
         String query = ("@info(name = 'query1') " +
                 "from istm " +
                 "select *  " +
@@ -117,7 +162,45 @@ public class TestCaseOfCdcSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    LOG.info("received event: " + event);
+                    logger.info("received event: " + event);
+                }
+            }
+        });
+
+        siddhiAppRuntime.start();
+        SiddhiTestHelper.waitForEvents(50, 1, new AtomicInteger(50), 10000);
+
+        siddhiAppRuntime.shutdown();
+    }
+
+    @Test
+    public void cdcUpdateOperationMysql() throws InterruptedException {
+        logger.info("------------------------------------------------------------------------------------------------");
+
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        String inStreamDefinition = "" +
+                "@app:name('cdcTesting')" +
+                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
+                " password = '1234', table.name = 'login', " +
+                " offsets.commit.policy = 'AlwaysCommitOffsetPolicy'," +
+                " operation = 'update', database.server.id = '1300'," +
+                " @map(type='keyvalue'))" +
+                "define stream istm (id string, name string, before_id string, before_name string);";
+        String query = ("@info(name = 'query1') " +
+                "from istm " +
+                "select *  " +
+                "insert into outputStream;");
+
+        SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition +
+                query);
+
+        siddhiAppRuntime.addCallback("query1", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                EventPrinter.print(timeStamp, inEvents, removeEvents);
+                for (Event event : inEvents) {
+                    logger.info("received event: " + event);
                 }
             }
         });
@@ -130,7 +213,7 @@ public class TestCaseOfCdcSource {
 
     @Test
     public void cdcInsertOperationOracle() throws InterruptedException {
-        LOG.info("------------------------------------------------------------------------------------------------");
+        logger.info("------------------------------------------------------------------------------------------------");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
@@ -154,7 +237,7 @@ public class TestCaseOfCdcSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    LOG.info("received event: " + event);
+                    logger.info("received event: " + event);
                 }
             }
         });

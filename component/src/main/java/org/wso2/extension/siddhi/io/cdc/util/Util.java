@@ -14,7 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Some util methods.
+ * This class contains Util methods for the cdc extension.
  */
 public class Util {
 
@@ -25,8 +25,6 @@ public class Util {
      * oracle==> jdbc:oracle:thin:@hostname:port:SID
      * or
      * jdbc:oracle:thin:@hostname:port/SERVICE
-     * sqlserver => jdbc:sqlserver://hostname:port;databaseName=testdb
-     * postgres ==> jdbc:postgresql://hostname:port/testdb
      * <p>
      * Hash map will include a subset of following elements according to the schema:
      * schema
@@ -35,6 +33,8 @@ public class Util {
      * database name
      * SID
      * driver
+     *
+     * @param url is the connection url given in the siddhi app
      */
     public static Map<String, String> extractDetails(String url) {
         Map<String, String> details = new HashMap<>();
@@ -54,7 +54,8 @@ public class Util {
 
                     details.put("schema", "mysql");
 
-                    String regex = "jdbc:mysql://(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
+                    String regex = "jdbc:mysql://(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):" +
+                            "(\\d++)/(\\w*)";
                     Pattern p = Pattern.compile(regex);
                     Matcher matcher = p.matcher(url);
                     if (matcher.find()) {
@@ -111,8 +112,7 @@ public class Util {
                     break;
                 }
                 default:
-                    //for now checking for mysql and oracle
-                    throw new IllegalArgumentException("Invalid JDBC url.");
+                    throw new IllegalArgumentException("Unsupported JDBC url.");
             }
             details.put("host", host);
             details.put("port", Integer.toString(port));
@@ -121,7 +121,10 @@ public class Util {
     }
 
     /**
-     * Create Hash map using the connect record
+     * Create Hash map using the connect record,
+     *
+     * @param connectRecord is the change data object which is received from debezium embedded engine.
+     * @param operation     is the change data event which is specified by the user.
      **/
     public static HashMap<String, String> createMap(ConnectRecord connectRecord, String operation) {
 
@@ -130,7 +133,7 @@ public class Util {
         Struct rawDetails;
         List<String> fieldNames = new ArrayList<>();
 
-        //get the operation from the record
+        //get the change data object's operation.
         String op;
         try {
             op = (String) record.get("op");
@@ -138,50 +141,48 @@ public class Util {
             return detailsMap;
         }
 
-        //get the field names of the table
-        switch (op) {
-            case "c":
-            case "u":
-                rawDetails = (Struct) record.get("after");
-                break;
-            case "d":
-                rawDetails = (Struct) record.get("before");
-                break;
-            default:
-                return detailsMap;
-        }
 
-        List<Field> fields = rawDetails.schema().fields();
-        for (Field key : fields) {
-            fieldNames.add(key.name());
-        }
+        //match the change data's operation with user specifying operation and proceed.
+        if (operation.equals("insert") && op.equals("c") || operation.equals("delete") && op.equals("d")
+                || operation.equals("update") && op.equals("u")) {
 
-        //TODO: just drop it if the user is not asking
-
-        if (operation.equals("insert") && op.equals("c")) {
-
-            rawDetails = (Struct) record.get("after");
-
-            for (String field : fieldNames) {
-                detailsMap.put(field, (String) rawDetails.get(field));
+            //get the field names of the table
+            switch (op) {
+                case "c":
+                case "u":
+                    rawDetails = (Struct) record.get("after");
+                    break;
+                case "d":
+                    rawDetails = (Struct) record.get("before");
+                    break;
+                default:
+                    return detailsMap;
             }
-        } else if (operation.equals("delete") && op.equals("d")) {
-            rawDetails = (Struct) record.get("before");
-
-            for (String field : fieldNames) {
-                detailsMap.put("before_" + field, (String) rawDetails.get(field));
-            }
-        } else if (operation.equals("update") && op.equals("u")) {
-            rawDetails = (Struct) record.get("after");
-
-            for (String field : fieldNames) {
-                detailsMap.put(field, (String) rawDetails.get(field));
+            List<Field> fields = rawDetails.schema().fields();
+            for (Field key : fields) {
+                fieldNames.add(key.name());
             }
 
-            rawDetails = (Struct) record.get("before");
-
-            for (String field : fieldNames) {
-                detailsMap.put("before_" + field, (String) rawDetails.get(field));
+            switch (operation) {
+                case "insert":
+                    for (String field : fieldNames) {
+                        detailsMap.put(field, (String) rawDetails.get(field));
+                    }
+                    break;
+                case "delete":
+                    for (String field : fieldNames) {
+                        detailsMap.put("before_" + field, (String) rawDetails.get(field));
+                    }
+                    break;
+                case "update":
+                    for (String field : fieldNames) {
+                        detailsMap.put(field, (String) rawDetails.get(field));
+                    }
+                    rawDetails = (Struct) record.get("before");
+                    for (String field : fieldNames) {
+                        detailsMap.put("before_" + field, (String) rawDetails.get(field));
+                    }
+                    break;
             }
         }
 

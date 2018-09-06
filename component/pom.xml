@@ -32,17 +32,17 @@
         <dependency>
             <groupId>io.debezium</groupId>
             <artifactId>debezium-embedded</artifactId>
-            <version>0.8.0.Final</version>
+            <version>${debezium-embedded.version}</version>
         </dependency>
         <dependency>
             <groupId>io.debezium</groupId>
             <artifactId>debezium-connector-mysql</artifactId>
-            <version>0.8.0.Final</version>
+            <version>${debezium-connector-mysql.version}</version>
         </dependency>
         <dependency>
             <groupId>io.debezium</groupId>
             <artifactId>debezium-connector-oracle</artifactId>
-            <version>0.8.0.CR1</version>
+            <version>${debezium-connector-oracle.version}</version>
         </dependency>
         <dependency>
             <groupId>org.wso2.siddhi</groupId>
@@ -78,23 +78,17 @@
             <artifactId>siddhi-map-json</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.github.shyiko/mysql-binlog-connector-java -->
-        <dependency>
-            <groupId>com.github.shyiko</groupId>
-            <artifactId>mysql-binlog-connector-java</artifactId>
-            <version>0.1.0</version>
-        </dependency>
         <dependency>
             <groupId>org.wso2.extension.siddhi.map.keyvalue</groupId>
             <artifactId>siddhi-map-keyvalue</artifactId>
-            <version>1.0.13</version>
+            <version>${siddhi-map-keyvalue.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>com.github.shyiko</groupId>
             <artifactId>mysql-binlog-connector-java</artifactId>
-            <version>0.13.0</version>
+            <version>${mysql-binlog-connector-java.version}</version>
         </dependency>
 
     </dependencies>
@@ -149,13 +143,12 @@
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
                         <Export-Package>
-                            <!--org.wso2.extension.siddhi.io.cdc,-->
                             org.wso2.extension.siddhi.io.cdc.*
                         </Export-Package>
                         <Private-Package>
-                            io.debezium.*,
-                            com.github.shyiko*
-                            <!--org.apache*-->
+                            com.github.shyiko*,
+                            io.debezium*,
+                            org.apache.kafka*
                         </Private-Package>
                         <Import-Package>
                             *;resolution:=optional

@@ -37,7 +37,7 @@ import java.util.concurrent.Executor;
  **/
 class ChangeDataCapture {
 
-    private final Logger logger = Logger.getLogger(ChangeDataCapture.class);
+    final Logger logger = Logger.getLogger(ChangeDataCapture.class);
     String operation;
     private Configuration config;
     private SourceEventListener sourceEventListener;
@@ -53,12 +53,10 @@ class ChangeDataCapture {
                    String serverName, String outServerName, String dbName, String pdbName)
             throws WrongConfigurationException {
 
-        this.config = Configuration.empty();
+        config = Configuration.empty();
 
         //extract details from the url.
-
         Map<String, String> urlDetails = Util.extractDetails(url);
-
         String schema = urlDetails.get("schema");
         String databaseName;
         String host = urlDetails.get("host");
@@ -119,16 +117,16 @@ class ChangeDataCapture {
                 .with("database.password", password).build();
 
         //set the serverID
-        if (serverID != -1) {
+        if (serverID == -1) {
             Random random = new Random();
             config = config.edit().with("server.id", random.ints(5400, 6400)).build();
         } else {
             config = config.edit().with("server.id", serverID).build();
         }
 
-        //set the database server name if specified, otherwise set <host>:<port> as default
+        //set the database server name if specified, otherwise set <host>_<port> as default
         if (serverName.equals("")) {
-            config = config.edit().with("database.server.name", host + ":" + port).build();
+            config = config.edit().with("database.server.name", host + "_" + port).build();
         } else {
             config = config.edit().with("database.server.name", serverName).build();
         }
@@ -139,9 +137,7 @@ class ChangeDataCapture {
 
 
         //create the folders for offset files and history files if not exists
-
         String[] paths = {offsetFileDirectory, historyFileDirectory};
-
         for (String path : paths) {
             File directory = new File(path);
 
@@ -150,16 +146,15 @@ class ChangeDataCapture {
             }
         }
 
-
         //set offset storage file name
         config = config.edit().with("offset.storage.file.filename",
-                offsetFileDirectory + "/" + siddhiStreamName + ".dat").build();
+                offsetFileDirectory + siddhiStreamName + ".dat").build();
 
         //set history file path details
         config = config.edit().with("database.history",
                 "io.debezium.relational.history.FileDatabaseHistory")
                 .with("database.history.file.filename",
-                        historyFileDirectory + "/" + siddhiStreamName + ".dat").build();
+                        historyFileDirectory + siddhiStreamName + ".dat").build();
 
         //TODO: Implement and set the offset commit policy with a custom in-memory policy.
         //TODO:Sync the offset committing with the SP's periodic snapshot
@@ -177,7 +172,7 @@ class ChangeDataCapture {
                         .with("offset.flush.interval.ms", -1).build();
                 break;
             default:
-                throw new WrongConfigurationException("Unsupported offset.commit.policy: " + commitPolicy);
+                throw new WrongConfigurationException("Unsupported offsets.commit.policy: " + commitPolicy);
         }
 
         //set connector properties
@@ -203,19 +198,10 @@ class ChangeDataCapture {
         } catch (Exception ee) {
             throw new SiddhiAppRuntimeException("Siddhi App run failed.");
         }
-
-
     }
 
     void stopEngine() {
         engine.stop();
-//        try {
-//            while (!engine.await(30, TimeUnit.SECONDS)) {
-//                logger.info("Wating another 30 seconds for the embedded engine to shut down");
-//            }
-//        } catch ( InterruptedException e ) {
-//            Thread.interrupted();
-//        }
     }
 
     /**
@@ -234,11 +220,16 @@ class ChangeDataCapture {
      */
     private static class CDCExecutor implements Executor {
         public void execute(Runnable command) {
-            command.run();
+            try {
+                command.run();
+            } catch (Exception ex) {
+                final Logger logger = Logger.getLogger(CDCExecutor.class);
+                logger.error("Error occured when running...");
+            }
         }
     }
 
-    class WrongConfigurationException extends Exception {
+    static class WrongConfigurationException extends Exception {
         WrongConfigurationException(String message) {
             super(message);
         }
