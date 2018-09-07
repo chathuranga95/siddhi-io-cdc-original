@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.Util;
 import org.wso2.siddhi.core.exception.SiddhiAppRuntimeException;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
+import org.wso2.siddhi.query.api.expression.condition.In;
 
 import java.io.File;
 import java.util.HashMap;
@@ -37,7 +38,7 @@ import java.util.concurrent.Executor;
  **/
 class ChangeDataCapture {
 
-    final Logger logger = Logger.getLogger(ChangeDataCapture.class);
+    private final Logger logger = Logger.getLogger(ChangeDataCapture.class);
     String operation;
     private Configuration config;
     private SourceEventListener sourceEventListener;
@@ -50,7 +51,8 @@ class ChangeDataCapture {
     void setConfig(String username, String password, String url, String tableName,
                    String offsetFileDirectory, String historyFileDirectory, String siddhiAppName,
                    String siddhiStreamName, String commitPolicy, int flushInterval, int serverID,
-                   String serverName, String outServerName, String dbName, String pdbName)
+                   String serverName, String outServerName, String dbName, String pdbName, HashMap<String,
+            String> connectorPropertiesMap)
             throws WrongConfigurationException {
 
         config = Configuration.empty();
@@ -132,8 +134,10 @@ class ChangeDataCapture {
         }
 
         //set offset backing storage to file backing storage
-        config = config.edit().with("offset.storage",
-                "org.apache.kafka.connect.storage.FileOffsetBackingStore").build();
+//        config = config.edit().with("offset.storage",
+//                "org.apache.kafka.connect.storage.FileOffsetBackingStore").build();
+
+        config = config.edit().with("offset.storage", TestBackingStore.class.getName()).build();
 
 
         //create the folders for offset files and history files if not exists
@@ -175,8 +179,13 @@ class ChangeDataCapture {
                 throw new WrongConfigurationException("Unsupported offsets.commit.policy: " + commitPolicy);
         }
 
-        //set connector properties
+        //set connector property: name
         config = config.edit().with("name", siddhiAppName + siddhiStreamName).build();
+
+        //set additional connector properties using comma separated key value pair string
+        for (Map.Entry<String, String> entry : connectorPropertiesMap.entrySet()) {
+            config = config.edit().with(entry.getKey(), entry.getValue()).build();
+        }
     }
 
     /**
@@ -201,7 +210,9 @@ class ChangeDataCapture {
     }
 
     void stopEngine() {
-        engine.stop();
+        if (!engine.stop()) {
+            logger.debug("Engine already stopped!");
+        }
     }
 
     /**

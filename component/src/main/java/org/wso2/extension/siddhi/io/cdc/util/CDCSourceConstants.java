@@ -39,6 +39,7 @@ public class CDCSourceConstants {
     public static final String TABLE_NAME = "table.name";
     public static final String DATABASE_DBNAME = "database.dbname";
     public static final String DATABASE_PDB_NAME = "database.pdb.name";
+    public static final String CONNECTOR_PROPERTIES = "connector.properties";
     public static final String EMPTY_STRING = "";
     public static final String INSERT = "insert";
     public static final String UPDATE = "update";

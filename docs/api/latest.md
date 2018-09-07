@@ -8,7 +8,7 @@
 
 <span id="syntax" class="md-typeset" style="display: block; font-weight: bold;">Syntax</span>
 ```
-@source(type="cdc", url="<STRING>", username="<STRING>", password="<STRING>", table.name="<STRING>", operation="<STRING>", @map(...)))
+@source(type="cdc", url="<STRING>", username="<STRING>", password="<STRING>", table.name="<STRING>", operation="<STRING>", connector.properties="<STRING>", @map(...)))
 ```
 
 <span id="query-parameters" class="md-typeset" style="display: block; color: rgba(0, 0, 0, 0.54); font-size: 12.8px; font-weight: bold;">QUERY PARAMETERS</span>
@@ -61,6 +61,14 @@
         <td style="vertical-align: top">No</td>
         <td style="vertical-align: top">No</td>
     </tr>
+    <tr>
+        <td style="vertical-align: top">connector.properties</td>
+        <td style="vertical-align: top; word-wrap: break-word">Debezium connector specified properties as a comma separated string. Previously set values will be overridden by this properties.</td>
+        <td style="vertical-align: top"><Empty_String></td>
+        <td style="vertical-align: top">STRING</td>
+        <td style="vertical-align: top">Yes</td>
+        <td style="vertical-align: top">No</td>
+    </tr>
 </table>
 
 <span id="system-parameters" class="md-typeset" style="display: block; font-weight: bold;">System Parameters</span>
@@ -80,7 +88,7 @@
     <tr>
         <td style="vertical-align: top">offsets.file.directory</td>
         <td style="vertical-align: top; word-wrap: break-word">Path to store the file with the connector’s change data offsets.</td>
-        <td style="vertical-align: top">{WSO2SP_HOME}/cdc/offset/<SiddhiAppName></td>
+        <td style="vertical-align: top">{WSO2SP_HOME}/cdc/offset/{SiddhiAppName}</td>
         <td style="vertical-align: top"><Any user Read/Writable directory></td>
     </tr>
     <tr>
@@ -92,7 +100,7 @@
     <tr>
         <td style="vertical-align: top">database.history.file.directory</td>
         <td style="vertical-align: top; word-wrap: break-word">Path to store database schema history changes.</td>
-        <td style="vertical-align: top">{WSO2SP_HOME}/cdc/history/<SiddhiAppName></td>
+        <td style="vertical-align: top">{WSO2SP_HOME}/cdc/history/{SiddhiAppName}</td>
         <td style="vertical-align: top"><Any user Read/Writable directory></td>
     </tr>
     <tr>

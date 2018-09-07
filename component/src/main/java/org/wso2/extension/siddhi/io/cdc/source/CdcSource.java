@@ -77,6 +77,14 @@ import java.util.Map;
                         name = "operation",
                         description = "interested change event name. 'insert', 'update' or 'delete'",
                         type = DataType.STRING
+                ),
+                @Parameter(
+                        name = "connector.properties",
+                        description = "Debezium connector specified properties as a comma separated string. " +
+                                "Previously set values will be overridden by this properties.",
+                        type = DataType.STRING,
+                        optional = true,
+                        defaultValue = "<Empty_String>"
                 )
         },
         systemParameter = {
@@ -89,7 +97,7 @@ import java.util.Map;
                 ),
                 @SystemParameter(name = "offsets.file.directory",
                         description = "Path to store the file with the connector’s change data offsets.",
-                        defaultValue = "{WSO2SP_HOME}/cdc/offset/<SiddhiAppName>",
+                        defaultValue = "{WSO2SP_HOME}/cdc/offset/{SiddhiAppName}",
                         possibleParameters = {"<Any user Read/Writable directory>"}
                 ),
                 @SystemParameter(name = "offsets.flush.intervalms",
@@ -99,7 +107,7 @@ import java.util.Map;
                 ),
                 @SystemParameter(name = "database.history.file.directory",
                         description = "Path to store database schema history changes.",
-                        defaultValue = "{WSO2SP_HOME}/cdc/history/<SiddhiAppName>",
+                        defaultValue = "{WSO2SP_HOME}/cdc/history/{SiddhiAppName}",
                         possibleParameters = {"<Any user Read/Writable directory>"}
                 ),
                 @SystemParameter(name = "database.server.name",
@@ -176,6 +184,8 @@ public class CdcSource extends Source {
     private String commitPolicy;
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
+    private String connectorProperties;
+    private HashMap<String, String> connectorPropertiesMap = new HashMap<>();
 
 
     /**
@@ -199,6 +209,8 @@ public class CdcSource extends Source {
         String siddhiAppName = siddhiAppContext.getName();
         String streamName = sourceEventListener.getStreamDefinition().getId();
 
+//        siddhiAppContext.getSnapshotService()
+
         //initialize mandatory parameters
         url = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_CONNECTION_URL).getValue();
         String tableName = optionHolder.validateAndGetOption(CDCSourceConstants.TABLE_NAME).getValue();
@@ -206,7 +218,7 @@ public class CdcSource extends Source {
         String password = optionHolder.validateAndGetOption(CDCSourceConstants.PASSWORD).getValue();
         operation = optionHolder.validateAndGetOption(CDCSourceConstants.OPERATION).getValue();
 
-        //initialize optional parameters from annotations, deployment config file or default values
+        //initialize system parameters from annotations, deployment config file or default values
 
         if (optionHolder.isOptionExists(CDCSourceConstants.OFFSET_FILE_DIRECTORY)) {
             offsetFileDirectory = optionHolder.validateAndGetOption(CDCSourceConstants.OFFSET_FILE_DIRECTORY)
@@ -280,6 +292,9 @@ public class CdcSource extends Source {
             pdbName = configReader.readConfig(CDCSourceConstants.DATABASE_PDB_NAME, CDCSourceConstants.EMPTY_STRING);
         }
 
+        //initialize parameters from connector.properties
+        connectorProperties = optionHolder.validateAndGetStaticValue(CDCSourceConstants.CONNECTOR_PROPERTIES,
+                CDCSourceConstants.EMPTY_STRING);
 
         validateParameter();
 
@@ -288,7 +303,7 @@ public class CdcSource extends Source {
         try {
             changeDataCapture.setConfig(username, password, url, tableName, offsetFileDirectory, historyFileDirectory,
                     siddhiAppName, streamName, commitPolicy, flushInterval, serverID, serverName,
-                    outboundServerName, dbName, pdbName);
+                    outboundServerName, dbName, pdbName, connectorPropertiesMap);
             changeDataCapture.setSourceEventListener(sourceEventListener);
         } catch (ChangeDataCapture.WrongConfigurationException ex) {
             throw new SiddhiAppCreationException("The cdc source couldn't get started. Invalid" +
@@ -405,6 +420,19 @@ public class CdcSource extends Source {
 
         if (Util.extractDetails(url).get("schema").equals("oracle") && outboundServerName.isEmpty()) {
             throw new SiddhiAppValidationException("database.out.server.name must be given for the oracle database.");
+        }
+
+        if (!connectorProperties.isEmpty()) {
+            String[] keyValuePairs = connectorProperties.split(",");
+            for (String keyValuePair : keyValuePairs) {
+                String[] keyValueArray = keyValuePair.split("=");
+                try {
+                    connectorPropertiesMap.put(keyValueArray[0].trim(), keyValueArray[1].trim());
+                } catch (ArrayIndexOutOfBoundsException ex) {
+                    throw new SiddhiAppValidationException("connector.properties input is invalid. Check near :" +
+                            keyValuePair);
+                }
+            }
         }
     }
 }
