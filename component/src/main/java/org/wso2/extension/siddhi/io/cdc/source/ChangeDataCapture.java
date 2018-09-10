@@ -25,7 +25,6 @@ import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.Util;
 import org.wso2.siddhi.core.exception.SiddhiAppRuntimeException;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
-import org.wso2.siddhi.query.api.expression.condition.In;
 
 import java.io.File;
 import java.util.HashMap;
@@ -137,7 +136,7 @@ class ChangeDataCapture {
 //        config = config.edit().with("offset.storage",
 //                "org.apache.kafka.connect.storage.FileOffsetBackingStore").build();
 
-        config = config.edit().with("offset.storage", TestBackingStore.class.getName()).build();
+        config = config.edit().with("offset.storage", InMemoryOffsetBackingStore.class.getName()).build();
 
 
         //create the folders for offset files and history files if not exists
