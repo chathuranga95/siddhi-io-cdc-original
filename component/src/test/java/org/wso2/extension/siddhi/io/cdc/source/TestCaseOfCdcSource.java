@@ -109,13 +109,13 @@ public class TestCaseOfCdcSource {
 //                "define stream istm (id string, name string);";
 
         String inStreamDefinition = "@app:name('cdcTesting')" +
-                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB', " +
-                " username = 'abcd'," +
-                " password = 'rere', " +
-                "connector.properties = 'database.user = root, database.password = 1234, somevalue = foo'," +
-                "table.name = 'login', " +
+                "@source(type = 'cdc'," +
+                " url = 'jdbc:mysql://localhost:3306/SimpleDB'," +
+                " username = 'debezium'," +
+                " password = 'dbz'," +
+                " table.name = 'login', " +
                 " offsets.commit.policy = 'PeriodicCommitOffsetPolicy'," +
-                "offsets.flush.intervalms = '5000'," +
+                " offsets.flush.intervalms = '5000'," +
                 " operation = 'insert', " +
                 " @map(type='keyvalue'))" +
                 "define stream istm (id string, name string);";

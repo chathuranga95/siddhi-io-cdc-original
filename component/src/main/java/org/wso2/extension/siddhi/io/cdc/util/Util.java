@@ -217,15 +217,15 @@ public class Util {
     }
 
 
-
     /**
      * Convert HashMap<byte[],byte[]> to String and vice versa.
      **/
-    public static String MapToString(HashMap<byte[], byte[]> map) {
+    public static String mapToString(HashMap<byte[], byte[]> map) {
         StringBuilder outStr = new StringBuilder("{");
 
-        for (byte[] key : map.keySet()) {
-            outStr.append(byteArrayToString(key)).append(":").append(byteArrayToString(map.get(key))).append(";");
+        for (Map.Entry<byte[], byte[]> entry : map.entrySet()) {
+            outStr.append(byteArrayToString(entry.getKey())).append(":").append(byteArrayToString(entry.getValue()))
+                    .append(";");
         }
 
         outStr = new StringBuilder(outStr.substring(0, outStr.length() - 1));
@@ -249,17 +249,16 @@ public class Util {
     public static HashMap<byte[], byte[]> stringToMap(String str) {
         HashMap<byte[], byte[]> map = new HashMap<>();
 
-        if(str.isEmpty()){
+        if (str.isEmpty()) {
             return map;
         }
 
-        str = str.substring(1, str.length() - 1);           //remove curly brackets
-        String[] keyValuePairs = str.split(";");              //split the string to create key-value pairs
+        str = str.substring(1, str.length() - 1);
+        String[] keyValuePairs = str.split(";");
 
-        for (String pair : keyValuePairs)                        //iterate over the pairs
-        {
-            String[] entry = pair.split(":");                   //split the pairs to get key and value
-            map.put(stringToByteArr(entry[0].trim()), stringToByteArr(entry[1].trim()));          //add them to the hashmap and trim whitespaces
+        for (String pair : keyValuePairs) {
+            String[] entry = pair.split(":");
+            map.put(stringToByteArr(entry[0].trim()), stringToByteArr(entry[1].trim()));
         }
 
 

@@ -20,6 +20,7 @@ package org.wso2.extension.siddhi.io.cdc.source;
 
 import io.debezium.config.Configuration;
 import io.debezium.embedded.EmbeddedEngine;
+import io.debezium.embedded.spi.OffsetCommitPolicy;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.Util;
@@ -150,8 +151,8 @@ class ChangeDataCapture {
         }
 
         //set offset storage file name
-        config = config.edit().with("offset.storage.file.filename",
-                offsetFileDirectory + siddhiStreamName + ".dat").build();
+//        config = config.edit().with("offset.storage.file.filename",
+//                offsetFileDirectory + siddhiStreamName + ".dat").build();
 
         //set history file path details
         config = config.edit().with("database.history",
@@ -159,24 +160,27 @@ class ChangeDataCapture {
                 .with("database.history.file.filename",
                         historyFileDirectory + siddhiStreamName + ".dat").build();
 
-        //TODO: Implement and set the offset commit policy with a custom in-memory policy.
         //TODO:Sync the offset committing with the SP's periodic snapshot
+
+        config = config.edit().with("offset.commit.policy",
+                PeriodicSnapshotCommitOffsetPolicy.class.getName()).build();
+
         //set offset commit policy and the flush interval as necessary.
-        switch (commitPolicy) {
-            case "PeriodicCommitOffsetPolicy":
-                config = config.edit().with("offset.commit.policy",
-                        "io.debezium.embedded.spi.OffsetCommitPolicy$PeriodicCommitOffsetPolicy")
-                        .with("offset.flush.interval.ms", flushInterval).build();
-                break;
-            case "AlwaysCommitOffsetPolicy":
-                //periodic commit policy with a flush interval less than 0 behaves like always commit policy.
-                config = config.edit().with("offset.commit.policy",
-                        "io.debezium.embedded.spi.OffsetCommitPolicy$PeriodicCommitOffsetPolicy")
-                        .with("offset.flush.interval.ms", -1).build();
-                break;
-            default:
-                throw new WrongConfigurationException("Unsupported offsets.commit.policy: " + commitPolicy);
-        }
+//        switch (commitPolicy) {
+//            case "PeriodicCommitOffsetPolicy":
+//                config = config.edit().with("offset.commit.policy",
+//                        "io.debezium.embedded.spi.OffsetCommitPolicy$PeriodicCommitOffsetPolicy")
+//                        .with("offset.flush.interval.ms", flushInterval).build();
+//                break;
+//            case "AlwaysCommitOffsetPolicy":
+//                //periodic commit policy with a flush interval less than 0 behaves like always commit policy.
+//                config = config.edit().with("offset.commit.policy",
+//                        "io.debezium.embedded.spi.OffsetCommitPolicy$PeriodicCommitOffsetPolicy")
+//                        .with("offset.flush.interval.ms", -1).build();
+//                break;
+//            default:
+//                throw new WrongConfigurationException("Unsupported offsets.commit.policy: " + commitPolicy);
+//        }
 
         //set connector property: name
         config = config.edit().with("name", siddhiAppName + siddhiStreamName).build();
@@ -204,7 +208,8 @@ class ChangeDataCapture {
         try {
             executor.execute(engine);
         } catch (Exception ee) {
-            throw new SiddhiAppRuntimeException("Siddhi App run failed.");
+            throw ee;
+//            throw new SiddhiAppRuntimeException("Siddhi App run failed.");
         }
     }
 
@@ -235,6 +240,7 @@ class ChangeDataCapture {
             } catch (Exception ex) {
                 final Logger logger = Logger.getLogger(CDCExecutor.class);
                 logger.error("Error occured when running...");
+                throw ex;
             }
         }
     }

@@ -14,13 +14,16 @@ import org.wso2.extension.siddhi.io.cdc.util.Util;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.prefs.Preferences;
 
+
+/**
+ * This class saves and loads the change data event offsets in in-memory.
+ */
 public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
     private static final Logger log = LoggerFactory.getLogger(InMemoryOffsetBackingStore.class);
-    HashMap<byte[], byte[]> cache = new HashMap<>();
+    private HashMap<byte[], byte[]> cache = new HashMap<>();
 
     public InMemoryOffsetBackingStore() {
     }
@@ -31,34 +34,34 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
 
     public synchronized void start() {
         super.start();
+        log.info("Started InMemoryOffsetBackingStore");
         this.load();
     }
 
     public synchronized void stop() {
         super.stop();
-        log.info("Stopped FileOffsetBackingStore");
+        log.info("Stopped InMemoryOffsetBackingStore");
     }
 
     private void load() {
-        log.info("Load called...");
         Preferences prefs = Preferences.userNodeForPackage(InMemoryOffsetBackingStore.class);
         cache = Util.stringToMap(prefs.get("mMapInstance", ""));
         try {
-            this.data = new HashMap();
-            Iterator iterator = cache.entrySet().iterator();
+            this.data = new HashMap<>();
 
-            while (iterator.hasNext()) {
-                Map.Entry<byte[], byte[]> mapEntry = (Map.Entry) iterator.next();
-                ByteBuffer key = mapEntry.getKey() != null ? ByteBuffer.wrap((byte[]) mapEntry.getKey()) : null;
-                ByteBuffer value = mapEntry.getValue() != null ? ByteBuffer.wrap((byte[]) mapEntry.getValue()) : null;
+            for (Object obj : cache.entrySet()) {
+                Map.Entry<byte[], byte[]> mapEntry = (Map.Entry) obj;
+                ByteBuffer key = mapEntry.getKey() != null ? ByteBuffer.wrap(mapEntry.getKey()) : null;
+                ByteBuffer value = mapEntry.getValue() != null ? ByteBuffer.wrap(mapEntry.getValue()) : null;
                 this.data.put(key, value);
             }
         } catch (Exception ex) {
+            log.error("error loading the in-memory offsets.");
+            log.error(ex.toString());
         }
     }
 
     protected void save() {
-        log.info("save called...");
         Preferences prefs = Preferences.userNodeForPackage(InMemoryOffsetBackingStore.class);
         try {
             for (Object o : this.data.entrySet()) {
@@ -66,7 +69,7 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
                 byte[] key = mapEntry.getKey() != null ? ((ByteBuffer) mapEntry.getKey()).array() : null;
                 byte[] value = mapEntry.getValue() != null ? ((ByteBuffer) mapEntry.getValue()).array() : null;
                 cache.put(key, value);
-                prefs.put("mMapInstance", Util.MapToString(cache));
+                prefs.put("mMapInstance", Util.mapToString(cache));
 
             }
         } catch (Exception var7) {
