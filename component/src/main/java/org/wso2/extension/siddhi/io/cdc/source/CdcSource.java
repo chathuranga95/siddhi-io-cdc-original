@@ -176,7 +176,8 @@ import java.util.Map;
 // for more information refer https://wso2.github.io/siddhi/documentation/siddhi-4.0/#sources
 public class CdcSource extends Source {
 
-
+    private HashMap<byte[], byte[]> cache = new HashMap<>();
+    private HashMap<String, String> connectorPropertiesMap = new HashMap<>();
     private String outboundServerName;
     private String url;
     private String operation;
@@ -185,8 +186,6 @@ public class CdcSource extends Source {
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
     private String connectorProperties;
-    private HashMap<String, String> connectorPropertiesMap = new HashMap<>();
-
 
     /**
      * The initialization method for {@link Source}, will be called before other methods. It used to validate
@@ -206,10 +205,9 @@ public class CdcSource extends Source {
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
 
+
         String siddhiAppName = siddhiAppContext.getName();
         String streamName = sourceEventListener.getStreamDefinition().getId();
-
-//        siddhiAppContext.getSnapshotService()
 
         //initialize mandatory parameters
         url = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_CONNECTION_URL).getValue();
@@ -300,6 +298,13 @@ public class CdcSource extends Source {
 
 
         this.changeDataCapture = new ChangeDataCapture();
+
+        //send this object reference to changeDataCapture object
+        changeDataCapture.setCdcSource(this);
+
+        //keep the object reference in Object keeper
+        ObjectKeeper.addCdcObject(this);
+
         try {
             changeDataCapture.setConfig(username, password, url, tableName, offsetFileDirectory, historyFileDirectory,
                     siddhiAppName, streamName, commitPolicy, flushInterval, serverID, serverName,
@@ -369,10 +374,10 @@ public class CdcSource extends Source {
      */
 
     @Override
-    public Map<String, Object> currentState() {
+    public synchronized Map<String, Object> currentState() {
         Map<String, Object> currentState = new HashMap<>();
 
-        currentState.put("changeDataCaptureObject", changeDataCapture);
+        currentState.put("cacheObj", cache);
 
         return currentState;
     }
@@ -385,11 +390,12 @@ public class CdcSource extends Source {
      *            This map will have the  same keys that is created upon calling currentState() method.
      */
     @Override
-    public void restoreState(Map<String, Object> map) {
-        ChangeDataCapture changeDataCaptureObj = (ChangeDataCapture) map.get("changeDataCaptureObject");
-        changeDataCaptureObj.captureChanges(changeDataCaptureObj.operation);
+    public synchronized void restoreState(Map<String, Object> map) {
+        Object cacheObj = map.get("cacheObj");
+        if (cacheObj instanceof HashMap) {
+            this.cache = (HashMap<byte[], byte[]>) cacheObj;
+        }
     }
-
 
     /**
      * Used to Validate the parameters.

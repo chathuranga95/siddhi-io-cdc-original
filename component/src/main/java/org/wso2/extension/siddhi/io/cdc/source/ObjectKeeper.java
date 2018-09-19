@@ -18,22 +18,26 @@
 
 package org.wso2.extension.siddhi.io.cdc.source;
 
-import io.debezium.config.Configuration;
-import io.debezium.embedded.spi.OffsetCommitPolicy;
-
-import java.time.Duration;
+import java.util.HashMap;
 
 /**
- * Let the offsets to commit with the WSO2 SP's periodic snapshot. Here, Offsets are always committed.
+ * This class Contains methods to store and retrieve the CdcSource objects.
  */
-public class PeriodicSnapshotCommitOffsetPolicy implements OffsetCommitPolicy {
+class ObjectKeeper {
+    private static HashMap<String, CdcSource> objectMap = new HashMap<>();
 
-
-    public PeriodicSnapshotCommitOffsetPolicy(Configuration config) {
+    /**
+     * @param cdcSource is added to the objectMap against it's toString() value.
+     */
+    static void addCdcObject(CdcSource cdcSource) {
+        objectMap.put(cdcSource.toString(), cdcSource);
     }
 
-    @Override
-    public boolean performCommit(long l, Duration duration) {
-        return true;
+    /**
+     * @param id cdcSource object's toString() value.
+     * @return cdcObject if the particular object is already added. Otherwise, return null.
+     */
+    static CdcSource getCdcObject(String id) {
+        return objectMap.get(id);
     }
 }

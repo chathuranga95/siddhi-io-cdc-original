@@ -20,7 +20,6 @@ package org.wso2.extension.siddhi.io.cdc.source;
 
 import io.debezium.config.Configuration;
 import io.debezium.embedded.EmbeddedEngine;
-import io.debezium.embedded.spi.OffsetCommitPolicy;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.Util;
@@ -39,10 +38,15 @@ import java.util.concurrent.Executor;
 class ChangeDataCapture {
 
     private final Logger logger = Logger.getLogger(ChangeDataCapture.class);
-    String operation;
+    private String operation;
     private Configuration config;
     private SourceEventListener sourceEventListener;
     private EmbeddedEngine engine;
+    private CdcSource cdcSource;
+
+    void setCdcSource(CdcSource cdcSource) {
+        this.cdcSource = cdcSource;
+    }
 
     void setSourceEventListener(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
@@ -137,8 +141,15 @@ class ChangeDataCapture {
 //        config = config.edit().with("offset.storage",
 //                "org.apache.kafka.connect.storage.FileOffsetBackingStore").build();
 
-        config = config.edit().with("offset.storage", InMemoryOffsetBackingStore.class.getName()).build();
+//        config = config.edit().with("offset.storage", KafkaOffsetBackingStore.class.getName())
+//                .with("offset.storage.topic","mytopic").build();
 
+
+        //set the offset storage backing store class name and attach the cdcsource object.
+        config = config.edit().with("offset.storage",
+                InMemoryOffsetBackingStore.class.getName())
+                .with("cdc.source.object", cdcSource)
+                .build();
 
         //create the folders for offset files and history files if not exists
         String[] paths = {offsetFileDirectory, historyFileDirectory};
@@ -160,7 +171,6 @@ class ChangeDataCapture {
                 .with("database.history.file.filename",
                         historyFileDirectory + siddhiStreamName + ".dat").build();
 
-        //TODO:Sync the offset committing with the SP's periodic snapshot
 
         config = config.edit().with("offset.commit.policy",
                 PeriodicSnapshotCommitOffsetPolicy.class.getName()).build();
@@ -195,6 +205,7 @@ class ChangeDataCapture {
      * Start the Debezium embedded engine with the configuration config and capture the change data.
      */
     void captureChanges(String operation) {
+
         this.operation = operation;
 
         // Create the engine with this configuration ...
@@ -203,13 +214,21 @@ class ChangeDataCapture {
                 .notifying(this::handleEvent)
                 .build();
 
+
+//        Map<String, Object> configmap = new HashMap<>();
+//        configmap.put("mObject", new Object());
+//        Map<String, String> map1 = new HashMap<>();
+//        ConfigDef configDef = new ConfigDef();
+//        configDef.parse(configmap);
+//        offsetStore.configure(new WorkerConfig(configDef, map1));
+
         // Run the engine asynchronously ...
         Executor executor = new CDCExecutor();
         try {
             executor.execute(engine);
         } catch (Exception ee) {
-            throw ee;
-//            throw new SiddhiAppRuntimeException("Siddhi App run failed.");
+//            throw ee;
+            throw new SiddhiAppRuntimeException("Siddhi App run failed.");
         }
     }
 
