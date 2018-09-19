@@ -52,9 +52,9 @@ class ChangeDataCapture {
         this.sourceEventListener = sourceEventListener;
     }
 
-    void setConfig(String username, String password, String url, String tableName,
-                   String offsetFileDirectory, String historyFileDirectory, String siddhiAppName,
-                   String siddhiStreamName, String commitPolicy, int flushInterval, int serverID,
+    void setConfig(String username, String password, String url, String tableName
+            , String historyFileDirectory, String siddhiAppName,
+                   String siddhiStreamName, int serverID,
                    String serverName, String outServerName, String dbName, String pdbName, HashMap<String,
             String> connectorPropertiesMap)
             throws WrongConfigurationException {
@@ -137,14 +137,6 @@ class ChangeDataCapture {
             config = config.edit().with("database.server.name", serverName).build();
         }
 
-        //set offset backing storage to file backing storage
-//        config = config.edit().with("offset.storage",
-//                "org.apache.kafka.connect.storage.FileOffsetBackingStore").build();
-
-//        config = config.edit().with("offset.storage", KafkaOffsetBackingStore.class.getName())
-//                .with("offset.storage.topic","mytopic").build();
-
-
         //set the offset storage backing store class name and attach the cdcsource object.
         config = config.edit().with("offset.storage",
                 InMemoryOffsetBackingStore.class.getName())
@@ -152,7 +144,8 @@ class ChangeDataCapture {
                 .build();
 
         //create the folders for offset files and history files if not exists
-        String[] paths = {offsetFileDirectory, historyFileDirectory};
+        // TODO: 9/19/18 get rid of this paths array 
+        String[] paths = {historyFileDirectory};
         for (String path : paths) {
             File directory = new File(path);
 
@@ -161,10 +154,6 @@ class ChangeDataCapture {
             }
         }
 
-        //set offset storage file name
-//        config = config.edit().with("offset.storage.file.filename",
-//                offsetFileDirectory + siddhiStreamName + ".dat").build();
-
         //set history file path details
         config = config.edit().with("database.history",
                 "io.debezium.relational.history.FileDatabaseHistory")
@@ -172,25 +161,9 @@ class ChangeDataCapture {
                         historyFileDirectory + siddhiStreamName + ".dat").build();
 
 
+        //set the offset.commit.policy to PeriodicSnapshotCommitOffsetPolicy.
         config = config.edit().with("offset.commit.policy",
                 PeriodicSnapshotCommitOffsetPolicy.class.getName()).build();
-
-        //set offset commit policy and the flush interval as necessary.
-//        switch (commitPolicy) {
-//            case "PeriodicCommitOffsetPolicy":
-//                config = config.edit().with("offset.commit.policy",
-//                        "io.debezium.embedded.spi.OffsetCommitPolicy$PeriodicCommitOffsetPolicy")
-//                        .with("offset.flush.interval.ms", flushInterval).build();
-//                break;
-//            case "AlwaysCommitOffsetPolicy":
-//                //periodic commit policy with a flush interval less than 0 behaves like always commit policy.
-//                config = config.edit().with("offset.commit.policy",
-//                        "io.debezium.embedded.spi.OffsetCommitPolicy$PeriodicCommitOffsetPolicy")
-//                        .with("offset.flush.interval.ms", -1).build();
-//                break;
-//            default:
-//                throw new WrongConfigurationException("Unsupported offsets.commit.policy: " + commitPolicy);
-//        }
 
         //set connector property: name
         config = config.edit().with("name", siddhiAppName + siddhiStreamName).build();
@@ -213,14 +186,6 @@ class ChangeDataCapture {
                 .using(config)
                 .notifying(this::handleEvent)
                 .build();
-
-
-//        Map<String, Object> configmap = new HashMap<>();
-//        configmap.put("mObject", new Object());
-//        Map<String, String> map1 = new HashMap<>();
-//        ConfigDef configDef = new ConfigDef();
-//        configDef.parse(configmap);
-//        offsetStore.configure(new WorkerConfig(configDef, map1));
 
         // Run the engine asynchronously ...
         Executor executor = new CDCExecutor();

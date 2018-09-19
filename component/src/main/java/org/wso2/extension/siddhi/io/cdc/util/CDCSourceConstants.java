@@ -27,12 +27,9 @@ public class CDCSourceConstants {
     public static final String PASSWORD = "password";
     public static final String DATABASE_CONNECTION_URL = "url";
     public static final String OPERATION = "operation";
-    public static final String OFFSET_FILE_DIRECTORY = "offsets.file.directory";
     public static final String DATABASE_HISTORY_FILE_DIRECTORY = "database.history.file.directory";
-    public static final String OFFSET_COMMIT_POLICY = "offsets.commit.policy";
     public static final String PERIODIC_OFFSET_COMMIT_POLICY = "PeriodicCommitOffsetPolicy";
     public static final String ALWAYS_OFFSET_COMMIT_POLICY = "AlwaysCommitOffsetPolicy";
-    public static final String OFFSET_FLUSH_INTERVALMS = "offsets.flush.intervalms";
     public static final String DATABASE_SERVER_NAME = "database.server.name";
     public static final String DATABASE_SERVER_ID = "database.server.id";
     public static final String DATABASE_OUT_SERVER_NAME = "database.out.server.name";

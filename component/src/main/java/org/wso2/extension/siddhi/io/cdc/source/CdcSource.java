@@ -88,23 +88,6 @@ import java.util.Map;
                 )
         },
         systemParameter = {
-                @SystemParameter(name = "offsets.commit.policy",
-                        description = "The name of the Java class of the commit policy. When this policy triggers," +
-                                " data offsets will be flushed. Should be one of 'PeriodicCommitOffsetPolicy' or " +
-                                "AlwaysCommitOffsetPolicy",
-                        defaultValue = "PeriodicCommitOffsetPolicy",
-                        possibleParameters = {"PeriodicCommitOffsetPolicy", "AlwaysCommitOffsetPolicy"}
-                ),
-                @SystemParameter(name = "offsets.file.directory",
-                        description = "Path to store the file with the connector’s change data offsets.",
-                        defaultValue = "{WSO2SP_HOME}/cdc/offset/{SiddhiAppName}",
-                        possibleParameters = {"<Any user Read/Writable directory>"}
-                ),
-                @SystemParameter(name = "offsets.flush.intervalms",
-                        description = "Time in milliseconds to flush offsets when the commit policy is set to File",
-                        defaultValue = "60000",
-                        possibleParameters = {"<Any non negative integer>"}
-                ),
                 @SystemParameter(name = "database.history.file.directory",
                         description = "Path to store database schema history changes.",
                         defaultValue = "{WSO2SP_HOME}/cdc/history/{SiddhiAppName}",
@@ -181,8 +164,6 @@ public class CdcSource extends Source {
     private String outboundServerName;
     private String url;
     private String operation;
-    private String offsetFileDirectory;
-    private String commitPolicy;
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
     private String connectorProperties;
@@ -218,14 +199,6 @@ public class CdcSource extends Source {
 
         //initialize system parameters from annotations, deployment config file or default values
 
-        if (optionHolder.isOptionExists(CDCSourceConstants.OFFSET_FILE_DIRECTORY)) {
-            offsetFileDirectory = optionHolder.validateAndGetOption(CDCSourceConstants.OFFSET_FILE_DIRECTORY)
-                    .getValue();
-        } else {
-            offsetFileDirectory = configReader.readConfig(CDCSourceConstants.OFFSET_FILE_DIRECTORY,
-                    Util.getStreamProcessorPath() + "cdc/offsets/" + siddhiAppName + "/");
-        }
-
         if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_HISTORY_FILE_DIRECTORY)) {
             historyFileDirectory = optionHolder.validateAndGetOption(
                     CDCSourceConstants.DATABASE_HISTORY_FILE_DIRECTORY).getValue();
@@ -235,21 +208,6 @@ public class CdcSource extends Source {
                     Util.getStreamProcessorPath() + "cdc/history/" + siddhiAppName + "/");
         }
 
-        if (optionHolder.isOptionExists(CDCSourceConstants.OFFSET_COMMIT_POLICY)) {
-            commitPolicy = optionHolder.validateAndGetOption(CDCSourceConstants.OFFSET_COMMIT_POLICY).getValue();
-        } else {
-            commitPolicy = configReader.readConfig(CDCSourceConstants.OFFSET_COMMIT_POLICY,
-                    CDCSourceConstants.PERIODIC_OFFSET_COMMIT_POLICY);
-        }
-
-        int flushInterval;
-        if (optionHolder.isOptionExists(CDCSourceConstants.OFFSET_FLUSH_INTERVALMS)) {
-            flushInterval = Integer.parseInt(optionHolder.validateAndGetOption(
-                    CDCSourceConstants.OFFSET_FLUSH_INTERVALMS).getValue());
-        } else {
-            flushInterval = Integer.parseInt(configReader.readConfig(CDCSourceConstants.OFFSET_FLUSH_INTERVALMS,
-                    "60000"));
-        }
 
         int serverID;
         if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_SERVER_ID)) {
@@ -306,8 +264,8 @@ public class CdcSource extends Source {
         ObjectKeeper.addCdcObject(this);
 
         try {
-            changeDataCapture.setConfig(username, password, url, tableName, offsetFileDirectory, historyFileDirectory,
-                    siddhiAppName, streamName, commitPolicy, flushInterval, serverID, serverName,
+            changeDataCapture.setConfig(username, password, url, tableName, historyFileDirectory,
+                    siddhiAppName, streamName, serverID, serverName,
                     outboundServerName, dbName, pdbName, connectorPropertiesMap);
             changeDataCapture.setSourceEventListener(sourceEventListener);
         } catch (ChangeDataCapture.WrongConfigurationException ex) {
@@ -404,17 +362,6 @@ public class CdcSource extends Source {
         if (!(operation.equals(CDCSourceConstants.INSERT) || operation.equals(CDCSourceConstants.UPDATE)
                 || operation.equals(CDCSourceConstants.DELETE))) {
             throw new SiddhiAppValidationException("operation should be one of 'insert', 'update' or 'delete'");
-        }
-        if (!(commitPolicy.equals(CDCSourceConstants.PERIODIC_OFFSET_COMMIT_POLICY)
-                || commitPolicy.equals(CDCSourceConstants.ALWAYS_OFFSET_COMMIT_POLICY))) {
-            throw new SiddhiAppValidationException("offset.commit.policy should be PeriodicCommitOffsetPolicy" +
-                    " or AlwaysCommitOffsetPolicy");
-        }
-        if (offsetFileDirectory.isEmpty()) {
-            throw new SiddhiAppValidationException("Couldn't set the database.history.file.directory automatically." +
-                    " Please set the parameter.");
-        } else if (!offsetFileDirectory.endsWith("/")) {
-            offsetFileDirectory = offsetFileDirectory + "/";
         }
 
         if (historyFileDirectory.isEmpty()) {
