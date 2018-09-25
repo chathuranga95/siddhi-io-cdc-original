@@ -31,11 +31,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * This class is for capturing change data using debezium embedded engine.
  **/
-class ChangeDataCapture {
+class ChangeDataCapture implements Runnable {
 
     private final Logger logger = Logger.getLogger(ChangeDataCapture.class);
     private String operation;
@@ -44,7 +46,8 @@ class ChangeDataCapture {
     private EmbeddedEngine engine;
     private CdcSource cdcSource;
 
-    void setCdcSource(CdcSource cdcSource) {
+    public ChangeDataCapture(String operation, CdcSource cdcSource) {
+        this.operation = operation;
         this.cdcSource = cdcSource;
     }
 
@@ -143,15 +146,11 @@ class ChangeDataCapture {
                 .with("cdc.source.object", cdcSource)
                 .build();
 
-        //create the folders for offset files and history files if not exists
-        // TODO: 9/19/18 get rid of this paths array 
-        String[] paths = {historyFileDirectory};
-        for (String path : paths) {
-            File directory = new File(path);
+        //create the folders for history file if not exists
+        File directory = new File(historyFileDirectory);
 
-            if (!directory.exists()) {
-                boolean res = directory.mkdirs();
-            }
+        if (!directory.exists()) {
+            boolean res = directory.mkdirs();
         }
 
         //set history file path details
@@ -177,9 +176,7 @@ class ChangeDataCapture {
     /**
      * Start the Debezium embedded engine with the configuration config and capture the change data.
      */
-    void captureChanges(String operation) {
-
-        this.operation = operation;
+    private void captureChanges() {
 
         // Create the engine with this configuration ...
         engine = EmbeddedEngine.create()
@@ -212,6 +209,22 @@ class ChangeDataCapture {
         if (!detailsMap.isEmpty()) {
             sourceEventListener.onEvent(detailsMap, null);
         }
+    }
+
+    /**
+     * When an object implementing interface <code>Runnable</code> is used
+     * to create a thread, starting the thread causes the object's
+     * <code>run</code> method to be called in that separately executing
+     * thread.
+     * <p>
+     * The general contract of the method <code>run</code> is that it may
+     * take any action whatsoever.
+     *
+     * @see Thread#run()
+     */
+    @Override
+    public void run() {
+        captureChanges();
     }
 
     /**

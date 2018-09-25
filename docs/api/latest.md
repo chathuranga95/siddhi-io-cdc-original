@@ -80,24 +80,6 @@
         <th>Possible Parameters</th>
     </tr>
     <tr>
-        <td style="vertical-align: top">offsets.commit.policy</td>
-        <td style="vertical-align: top; word-wrap: break-word">The name of the Java class of the commit policy. When this policy triggers, data offsets will be flushed. Should be one of 'PeriodicCommitOffsetPolicy' or AlwaysCommitOffsetPolicy</td>
-        <td style="vertical-align: top">PeriodicCommitOffsetPolicy</td>
-        <td style="vertical-align: top">PeriodicCommitOffsetPolicy<br>AlwaysCommitOffsetPolicy</td>
-    </tr>
-    <tr>
-        <td style="vertical-align: top">offsets.file.directory</td>
-        <td style="vertical-align: top; word-wrap: break-word">Path to store the file with the connector’s change data offsets.</td>
-        <td style="vertical-align: top">{WSO2SP_HOME}/cdc/offset/{SiddhiAppName}</td>
-        <td style="vertical-align: top"><Any user Read/Writable directory></td>
-    </tr>
-    <tr>
-        <td style="vertical-align: top">offsets.flush.intervalms</td>
-        <td style="vertical-align: top; word-wrap: break-word">Time in milliseconds to flush offsets when the commit policy is set to File</td>
-        <td style="vertical-align: top">60000</td>
-        <td style="vertical-align: top"><Any non negative integer></td>
-    </tr>
-    <tr>
         <td style="vertical-align: top">database.history.file.directory</td>
         <td style="vertical-align: top; word-wrap: break-word">Path to store database schema history changes.</td>
         <td style="vertical-align: top">{WSO2SP_HOME}/cdc/history/{SiddhiAppName}</td>

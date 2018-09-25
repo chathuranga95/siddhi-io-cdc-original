@@ -23,7 +23,7 @@ import java.util.HashMap;
 /**
  * This class Contains methods to store and retrieve the CdcSource objects.
  */
-class ObjectKeeper {
+class CDCSourceObjectKeeper {
     private static HashMap<String, CdcSource> objectMap = new HashMap<>();
 
     /**

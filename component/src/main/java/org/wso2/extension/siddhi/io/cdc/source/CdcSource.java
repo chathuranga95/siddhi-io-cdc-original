@@ -18,6 +18,7 @@
 
 package org.wso2.extension.siddhi.io.cdc.source;
 
+import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.CDCSourceConstants;
 import org.wso2.extension.siddhi.io.cdc.util.Util;
 import org.wso2.siddhi.annotation.Example;
@@ -26,6 +27,7 @@ import org.wso2.siddhi.annotation.Parameter;
 import org.wso2.siddhi.annotation.SystemParameter;
 import org.wso2.siddhi.annotation.util.DataType;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
+import org.wso2.siddhi.core.exception.ConnectionUnavailableException;
 import org.wso2.siddhi.core.exception.SiddhiAppCreationException;
 import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
@@ -35,6 +37,9 @@ import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 
 /**
@@ -159,6 +164,8 @@ import java.util.Map;
 // for more information refer https://wso2.github.io/siddhi/documentation/siddhi-4.0/#sources
 public class CdcSource extends Source {
 
+    final ExecutorService exService = Executors.newSingleThreadExecutor();
+    private final Logger logger = Logger.getLogger(CdcSource.class);
     private HashMap<byte[], byte[]> cache = new HashMap<>();
     private HashMap<String, String> connectorPropertiesMap = new HashMap<>();
     private String outboundServerName;
@@ -186,6 +193,8 @@ public class CdcSource extends Source {
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
 
+        //get the last offset details from last snapshot
+
 
         String siddhiAppName = siddhiAppContext.getName();
         String streamName = sourceEventListener.getStreamDefinition().getId();
@@ -207,7 +216,6 @@ public class CdcSource extends Source {
                     CDCSourceConstants.DATABASE_HISTORY_FILE_DIRECTORY,
                     Util.getStreamProcessorPath() + "cdc/history/" + siddhiAppName + "/");
         }
-
 
         int serverID;
         if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_SERVER_ID)) {
@@ -254,14 +262,12 @@ public class CdcSource extends Source {
 
         validateParameter();
 
+        //send this object reference and preferred operation to changeDataCapture object
+        this.changeDataCapture = new ChangeDataCapture(operation, this);
 
-        this.changeDataCapture = new ChangeDataCapture();
-
-        //send this object reference to changeDataCapture object
-        changeDataCapture.setCdcSource(this);
 
         //keep the object reference in Object keeper
-        ObjectKeeper.addCdcObject(this);
+        CDCSourceObjectKeeper.addCdcObject(this);
 
         try {
             changeDataCapture.setConfig(username, password, url, tableName, historyFileDirectory,
@@ -289,8 +295,9 @@ public class CdcSource extends Source {
      * Initially Called to connect to the debezium embedded engine to receive change data events asynchronously.
      */
     @Override
-    public void connect(ConnectionCallback connectionCallback) {
-        changeDataCapture.captureChanges(operation);
+    public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
+        Future<?> submit = exService.submit(changeDataCapture);
+        logger.info(submit.isCancelled());
     }
 
     /**
@@ -336,6 +343,7 @@ public class CdcSource extends Source {
         Map<String, Object> currentState = new HashMap<>();
 
         currentState.put("cacheObj", cache);
+        logger.info("currentState() called, saved on in-memory :" + Util.mapToString(cache));
 
         return currentState;
     }
@@ -353,6 +361,15 @@ public class CdcSource extends Source {
         if (cacheObj instanceof HashMap) {
             this.cache = (HashMap<byte[], byte[]>) cacheObj;
         }
+        logger.info("restoreState() called, returned :" + Util.mapToString(cache));
+    }
+
+    synchronized HashMap<byte[], byte[]> getCache() {
+        return cache;
+    }
+
+    synchronized void setCache(HashMap<byte[], byte[]> cache) {
+        this.cache = cache;
     }
 
     /**
@@ -389,4 +406,3 @@ public class CdcSource extends Source {
         }
     }
 }
-

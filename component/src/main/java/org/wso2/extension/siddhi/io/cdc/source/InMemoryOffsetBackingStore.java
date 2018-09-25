@@ -10,6 +10,7 @@ import org.apache.kafka.connect.runtime.WorkerConfig;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wso2.extension.siddhi.io.cdc.util.Util;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -30,7 +31,8 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
     public void configure(WorkerConfig config) {
         super.configure(config);
         String cdcSourceObjectId = (String) config.originals().get("cdc.source.object");
-        cdcSource = ObjectKeeper.getCdcObject(cdcSourceObjectId);
+        cdcSource = CDCSourceObjectKeeper.getCdcObject(cdcSourceObjectId);
+//        log.info("got cdcSourceObject :" + cdcSource);
     }
 
     public synchronized void start() {
@@ -47,8 +49,8 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
     private synchronized void load() {
 //        Preferences prefs = Preferences.userNodeForPackage(InMemoryOffsetBackingStore.class);
 //        cache = Util.stringToMap(prefs.get("mMapInstance", ""));
-        Object cacheObj = cdcSource.currentState().get("cacheObj");
-        cache = (HashMap<byte[], byte[]>) cacheObj;
+        cache = cdcSource.getCache();
+//        log.info("got saved cache :" + Util.mapToString(cache));
 
         try {
             this.data = new HashMap<>();
@@ -75,10 +77,8 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
                 cache.put(key, value);
 //                prefs.put("mMapInstance", Util.mapToString(cache));
             }
-
-            Map<String, Object> currentState = new HashMap<>();
-            currentState.put("cacheObj", cache);
-            cdcSource.restoreState(currentState);
+            cdcSource.setCache(cache);
+            log.info("saved to cache :" + Util.mapToString(cache));
         } catch (Exception var7) {
             throw new ConnectException(var7);
         }

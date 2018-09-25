@@ -1,15 +1,19 @@
 package org.wso2.extension.siddhi.io.cdc.source;
 
 import org.apache.log4j.Logger;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.wso2.extension.siddhi.io.cdc.util.Util;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
+import org.wso2.siddhi.core.exception.CannotRestoreSiddhiAppStateException;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
 import org.wso2.siddhi.core.util.EventPrinter;
 import org.wso2.siddhi.core.util.SiddhiTestHelper;
 import org.wso2.siddhi.core.util.config.InMemoryConfigManager;
+import org.wso2.siddhi.core.util.persistence.InMemoryPersistenceStore;
+import org.wso2.siddhi.core.util.persistence.PersistenceStore;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -94,9 +98,12 @@ public class TestCaseOfCdcSource {
 
     @Test
     public void cdcInsertOperationMysql() throws InterruptedException {
-        logger.info("------------------------------------------------------------------------------------------------");
+        logger.info("persistence test - cdc");
+
+        PersistenceStore persistenceStore = new InMemoryPersistenceStore();
 
         SiddhiManager siddhiManager = new SiddhiManager();
+        siddhiManager.setPersistenceStore(persistenceStore);
 
         String inStreamDefinition = "@app:name('cdcTesting')" +
                 "@source(type = 'cdc'," +
@@ -109,10 +116,9 @@ public class TestCaseOfCdcSource {
                 "define stream istm (id string, name string);";
 
         String query = ("@info(name = 'query1') " +
-                "from istm " +
+                "from istm#log() " +
                 "select *  " +
                 "insert into outputStream;");
-
 
 
         SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition +
@@ -123,20 +129,48 @@ public class TestCaseOfCdcSource {
         siddhiAppRuntime.addCallback("query1", new QueryCallback() {
             @Override
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
-                EventPrinter.print(timeStamp, inEvents, removeEvents);
+//                EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    logger.info("received event from query 1: " + event);
+                    logger.info("received event: " + event);
                 }
             }
         });
 
         siddhiAppRuntime.start();
-        SiddhiTestHelper.waitForEvents(50, 1, new AtomicInteger(1), 10000);
+
+
+        //persisting
+        Thread.sleep(5000);
+        siddhiAppRuntime.persist();
+
+        //restarting siddhi app
+        Thread.sleep(5000);
+        siddhiAppRuntime.shutdown();
+        siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
+        siddhiAppRuntime.addCallback("query1", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+//                EventPrinter.print(timeStamp, inEvents, removeEvents);
+                for (Event event : inEvents) {
+                    logger.info("received event from query 1: " + event);
+                }
+            }
+        });
+        siddhiAppRuntime.start();
+
+        //loading
+        try {
+            siddhiAppRuntime.restoreLastRevision();
+        } catch (CannotRestoreSiddhiAppStateException e) {
+            Assert.fail("Restoring of Siddhi app " + siddhiAppRuntime.getName() + " failed", e);
+        }
+
+
+        SiddhiTestHelper.waitForEvents(50, 50000, new AtomicInteger(1), 10000);
         siddhiAppRuntime.shutdown();
 
 
     }
-
 
     @Test
     public void cdcDeleteOperationMysql() throws InterruptedException {
