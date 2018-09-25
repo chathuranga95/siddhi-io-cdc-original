@@ -7,7 +7,8 @@ The **siddhi-io-cdc extension** is an extension to <a target="_blank" href="http
 ## Prerequisites
 
 * The MySQL server must be configured to use a row-level binary log. 
-* MySQL jdbc driver and Debezium MySQL connector should be copied to the `<STREAM_PROCESSOR_HOME>/lib` directory.
+* MySQL jdbc driver added to the `<STREAM_PROCESSOR_HOME>/lib` directory.
+* User should enable state persistence on deployment.yaml file.
 * A MySQL user should be created with SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT privileges on the tables he wants to capture changes.
 
 Find some useful links below:
