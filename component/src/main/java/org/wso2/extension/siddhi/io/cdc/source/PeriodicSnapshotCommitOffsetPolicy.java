@@ -24,10 +24,10 @@ import io.debezium.embedded.spi.OffsetCommitPolicy;
 import java.time.Duration;
 
 /**
- * Let the offsets to commit with the WSO2 SP's periodic snapshot. Here, Offsets are always committed.
+ * Let the offsets to commit with the WSO2 SP's periodic snapshot.
+ * Offsets are always committed, thus all offsets will be flushed with the periodic snapshot.
  */
 public class PeriodicSnapshotCommitOffsetPolicy implements OffsetCommitPolicy {
-
 
     public PeriodicSnapshotCommitOffsetPolicy(Configuration config) {
     }

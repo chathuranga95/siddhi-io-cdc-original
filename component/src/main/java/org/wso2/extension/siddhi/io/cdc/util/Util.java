@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 public class Util {
 
     /**
-     * Extract the details from the connection url and return as an array.
+     * Extract the details from the connection url and return as a HashMap.
      * <p>
      * mysql===> jdbc:mysql://hostname:port/testdb
      * oracle==> jdbc:oracle:thin:@hostname:port:SID
@@ -121,14 +121,14 @@ public class Util {
     }
 
     /**
-     * Create Hash map using the connect record,
+     * Create Hash map using the connect record and operation,
      *
      * @param connectRecord is the change data object which is received from debezium embedded engine.
      * @param operation     is the change data event which is specified by the user.
      **/
-    public static HashMap<String, String> createMap(ConnectRecord connectRecord, String operation) {
+    public static HashMap<String, Object> createMap(ConnectRecord connectRecord, String operation) {
 
-        HashMap<String, String> detailsMap = new HashMap<>();
+        HashMap<String, Object> detailsMap = new HashMap<>();
         Struct record = (Struct) connectRecord.value();
         Struct rawDetails;
         List<String> fieldNames = new ArrayList<>();
@@ -140,7 +140,6 @@ public class Util {
         } catch (Exception ex) {
             return detailsMap;
         }
-
 
         //match the change data's operation with user specifying operation and proceed.
         if (operation.equals("insert") && op.equals("c") || operation.equals("delete") && op.equals("d")
@@ -166,21 +165,21 @@ public class Util {
             switch (operation) {
                 case "insert":
                     for (String field : fieldNames) {
-                        detailsMap.put(field, (String) rawDetails.get(field));
+                        detailsMap.put(field, rawDetails.get(field));
                     }
                     break;
                 case "delete":
                     for (String field : fieldNames) {
-                        detailsMap.put("before_" + field, (String) rawDetails.get(field));
+                        detailsMap.put("before_" + field, rawDetails.get(field));
                     }
                     break;
                 case "update":
                     for (String field : fieldNames) {
-                        detailsMap.put(field, (String) rawDetails.get(field));
+                        detailsMap.put(field, rawDetails.get(field));
                     }
                     rawDetails = (Struct) record.get("before");
                     for (String field : fieldNames) {
-                        detailsMap.put("before_" + field, (String) rawDetails.get(field));
+                        detailsMap.put("before_" + field, rawDetails.get(field));
                     }
                     break;
             }
@@ -192,7 +191,7 @@ public class Util {
     /**
      * Get the WSO2 Stream Processor's local path.
      */
-    // TODO: 8/31/18 discuss this with suho
+    // TODO: 8/31/18 discuss this to have a better way.
     public static String getStreamProcessorPath() {
         String path = CdcSource.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPath;
@@ -205,7 +204,7 @@ public class Util {
         int x = decodedPath.length() - 1;
         int folderUpCharacterCount = 0;
         int counter = 0;
-        while (folderUpCharacterCount < 4) {
+        while (folderUpCharacterCount < 2) {
             if (Character.toString(decodedPath.charAt(x - counter)).equals("/")) {
                 folderUpCharacterCount++;
             }
@@ -215,65 +214,4 @@ public class Util {
         decodedPath = decodedPath.substring(0, x - counter + 2);
         return decodedPath;
     }
-
-
-    /**
-     * Convert HashMap<byte[],byte[]> to String and vice versa.
-     **/
-    public static String mapToString(HashMap<byte[], byte[]> map) {
-        StringBuilder outStr = new StringBuilder("{");
-
-        for (Map.Entry<byte[], byte[]> entry : map.entrySet()) {
-            outStr.append(byteArrayToString(entry.getKey())).append(":").append(byteArrayToString(entry.getValue()))
-                    .append(";");
-        }
-
-        outStr = new StringBuilder(outStr.substring(0, outStr.length() - 1));
-        outStr.append("}");
-        return outStr.toString();
-    }
-
-    private static String byteArrayToString(byte[] arr) {
-        StringBuilder outStr = new StringBuilder("{");
-
-        for (byte num : arr) {
-            outStr.append(num).append(",");
-        }
-
-        outStr = new StringBuilder(outStr.substring(0, outStr.length() - 1));
-        outStr.append("}");
-
-        return outStr.toString();
-    }
-
-    public static HashMap<byte[], byte[]> stringToMap(String str) {
-        HashMap<byte[], byte[]> map = new HashMap<>();
-
-        if (str.isEmpty()) {
-            return map;
-        }
-
-        str = str.substring(1, str.length() - 1);
-        String[] keyValuePairs = str.split(";");
-
-        for (String pair : keyValuePairs) {
-            String[] entry = pair.split(":");
-            map.put(stringToByteArr(entry[0].trim()), stringToByteArr(entry[1].trim()));
-        }
-
-
-        return map;
-    }
-
-    private static byte[] stringToByteArr(String str) {
-        str = str.substring(1, str.length() - 1);
-        String[] nums = str.split(",");
-        byte[] byteArr = new byte[nums.length];
-        for (int i = 0; i < nums.length; i++) {
-            byteArr[i] = Byte.parseByte(nums[i]);
-        }
-
-        return byteArr;
-    }
-
 }

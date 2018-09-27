@@ -22,8 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.testng.AssertJUnit.assertEquals;
 
 public class TestCaseOfCdcSource {
-    // If you will know about this related testcase,
-    //refer https://github.com/wso2-extensions/siddhi-io-file/blob/master/component/src/test
+
     private static final Logger logger = Logger.getLogger(TestCaseOfCdcSource.class);
 
     @Test
@@ -206,6 +205,43 @@ public class TestCaseOfCdcSource {
 
         siddhiAppRuntime.start();
         SiddhiTestHelper.waitForEvents(50, 1, new AtomicInteger(50), 10000);
+
+        siddhiAppRuntime.shutdown();
+    }
+
+    @Test
+    public void cdcInsertOperationMysql2() throws InterruptedException {
+        logger.info("------------------------------------------------------------------------------------------------");
+
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        String inStreamDefinition = "" +
+                "@app:name('cdcTesting')" +
+                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
+                " password = '1234', table.name = 'people', " +
+                " operation = 'insert'," +
+                " @map(type='keyvalue'))" +
+                "define stream istm (name string, age int);";
+        String query = ("@info(name = 'query1') " +
+                "from istm " +
+                "select *  " +
+                "insert into outputStream;");
+
+        SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition +
+                query);
+
+        siddhiAppRuntime.addCallback("query1", new QueryCallback() {
+            @Override
+            public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                EventPrinter.print(timeStamp, inEvents, removeEvents);
+                for (Event event : inEvents) {
+                    logger.info("received event: " + event);
+                }
+            }
+        });
+
+        siddhiAppRuntime.start();
+        SiddhiTestHelper.waitForEvents(50, 500000, new AtomicInteger(50), 10000);
 
         siddhiAppRuntime.shutdown();
     }

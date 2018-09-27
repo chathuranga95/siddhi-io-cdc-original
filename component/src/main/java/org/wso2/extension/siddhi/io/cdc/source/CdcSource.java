@@ -161,7 +161,6 @@ import java.util.concurrent.Future;
         }
 )
 
-// for more information refer https://wso2.github.io/siddhi/documentation/siddhi-4.0/#sources
 public class CdcSource extends Source {
 
     final ExecutorService exService = Executors.newSingleThreadExecutor();
@@ -186,14 +185,10 @@ public class CdcSource extends Source {
      * @param siddhiAppContext    the context of the {@link org.wso2.siddhi.query.api.SiddhiApp} used to get Siddhi
      *                            related utility functions.
      */
-
-
     @Override
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder,
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
-
-        //get the last offset details from last snapshot
 
 
         String siddhiAppName = siddhiAppContext.getName();
@@ -264,7 +259,6 @@ public class CdcSource extends Source {
 
         //send this object reference and preferred operation to changeDataCapture object
         this.changeDataCapture = new ChangeDataCapture(operation, this);
-
 
         //keep the object reference in Object keeper
         CDCSourceObjectKeeper.addCdcObject(this);
@@ -337,13 +331,10 @@ public class CdcSource extends Source {
      *
      * @return stateful objects of the processing element as a map
      */
-
     @Override
     public synchronized Map<String, Object> currentState() {
         Map<String, Object> currentState = new HashMap<>();
-
         currentState.put("cacheObj", cache);
-        logger.info("currentState() called, saved on in-memory :" + Util.mapToString(cache));
 
         return currentState;
     }
@@ -361,7 +352,6 @@ public class CdcSource extends Source {
         if (cacheObj instanceof HashMap) {
             this.cache = (HashMap<byte[], byte[]>) cacheObj;
         }
-        logger.info("restoreState() called, returned :" + Util.mapToString(cache));
     }
 
     synchronized HashMap<byte[], byte[]> getCache() {
@@ -395,9 +385,9 @@ public class CdcSource extends Source {
         if (!connectorProperties.isEmpty()) {
             String[] keyValuePairs = connectorProperties.split(",");
             for (String keyValuePair : keyValuePairs) {
-                String[] keyValueArray = keyValuePair.split("=");
+                String[] keyAndValue = keyValuePair.split("=");
                 try {
-                    connectorPropertiesMap.put(keyValueArray[0].trim(), keyValueArray[1].trim());
+                    connectorPropertiesMap.put(keyAndValue[0].trim(), keyAndValue[1].trim());
                 } catch (ArrayIndexOutOfBoundsException ex) {
                     throw new SiddhiAppValidationException("connector.properties input is invalid. Check near :" +
                             keyValuePair);

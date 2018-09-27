@@ -31,8 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * This class is for capturing change data using debezium embedded engine.
@@ -46,7 +44,7 @@ class ChangeDataCapture implements Runnable {
     private EmbeddedEngine engine;
     private CdcSource cdcSource;
 
-    public ChangeDataCapture(String operation, CdcSource cdcSource) {
+    ChangeDataCapture(String operation, CdcSource cdcSource) {
         this.operation = operation;
         this.cdcSource = cdcSource;
     }
@@ -148,12 +146,15 @@ class ChangeDataCapture implements Runnable {
 
         //create the folders for history file if not exists
         File directory = new File(historyFileDirectory);
-
+// TODO: 9/27/18 verify here
         if (!directory.exists()) {
-            boolean res = directory.mkdirs();
+            boolean isDirectoryCreated = directory.mkdirs();
+            if (isDirectoryCreated) {
+                logger.debug("Directory created for history file.");
+            }
         }
 
-        //set history file path details
+        //set history file path.
         config = config.edit().with("database.history",
                 "io.debezium.relational.history.FileDatabaseHistory")
                 .with("database.history.file.filename",
@@ -178,7 +179,7 @@ class ChangeDataCapture implements Runnable {
      */
     private void captureChanges() {
 
-        // Create the engine with this configuration ...
+        // Create the engine with above set configuration ...
         engine = EmbeddedEngine.create()
                 .using(config)
                 .notifying(this::handleEvent)
@@ -188,8 +189,7 @@ class ChangeDataCapture implements Runnable {
         Executor executor = new CDCExecutor();
         try {
             executor.execute(engine);
-        } catch (Exception ee) {
-//            throw ee;
+        } catch (Exception ex) {
             throw new SiddhiAppRuntimeException("Siddhi App run failed.");
         }
     }
@@ -204,7 +204,7 @@ class ChangeDataCapture implements Runnable {
      * When an event is received, create and send the event details to the sourceEventListener.
      */
     private void handleEvent(ConnectRecord connectRecord) {
-        HashMap<String, String> detailsMap = Util.createMap(connectRecord, operation);
+        HashMap<String, Object> detailsMap = Util.createMap(connectRecord, operation);
 
         if (!detailsMap.isEmpty()) {
             sourceEventListener.onEvent(detailsMap, null);
@@ -228,7 +228,7 @@ class ChangeDataCapture implements Runnable {
     }
 
     /**
-     * Concrete class of the executor.
+     * Executor class to execute the embedded engine and handle errors.
      */
     private static class CDCExecutor implements Executor {
         public void execute(Runnable command) {
