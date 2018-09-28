@@ -22,6 +22,7 @@ import io.debezium.config.Configuration;
 import io.debezium.embedded.EmbeddedEngine;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.log4j.Logger;
+import org.wso2.extension.siddhi.io.cdc.util.CDCSourceConstants;
 import org.wso2.extension.siddhi.io.cdc.util.Util;
 import org.wso2.siddhi.core.exception.SiddhiAppRuntimeException;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
@@ -75,43 +76,45 @@ class ChangeDataCapture implements Runnable {
         switch (schema) {
             case "mysql":
                 databaseName = urlDetails.get("database");
-                config = config.edit().with("connector.class", "io.debezium.connector.mysql.MySqlConnector").build();
+                config = config.edit().with(CDCSourceConstants.CONNECTOR_CLASS,
+                        "io.debezium.connector.mysql.MySqlConnector").build();
                 if (port == -1) {
-                    config = config.edit().with("database.port", 3306).build();
+                    config = config.edit().with(CDCSourceConstants.DATABASE_PORT, 3306).build();
                 } else {
-                    config = config.edit().with("database.port", port).build();
+                    config = config.edit().with(CDCSourceConstants.DATABASE_PORT, port).build();
                 }
 
                 //set the specified mysql table to be monitored
-                config = config.edit().with("table.whitelist", databaseName + "." + tableName).build();
+                config = config.edit().with(CDCSourceConstants.TABLE_WHITELIST, databaseName + "." + tableName).build();
                 break;
             case "oracle":
                 sid = urlDetails.get("sid");
-                config = config.edit().with("connector.class", "io.debezium.connector.oracle.OracleConnector").build();
+                config = config.edit().with(CDCSourceConstants.CONNECTOR_CLASS,
+                        "io.debezium.connector.oracle.OracleConnector").build();
                 if (port == -1) {
-                    config = config.edit().with("database.port", 1521).build();
+                    config = config.edit().with(CDCSourceConstants.DATABASE_PORT, 1521).build();
                 } else {
-                    config = config.edit().with("database.port", port).build();
+                    config = config.edit().with(CDCSourceConstants.DATABASE_PORT, port).build();
                 }
 
                 //set the dbname if specified, otherwise set sid as default
                 if (dbName.equals("")) {
-                    config = config.edit().with("database.dbname", sid).build();
+                    config = config.edit().with(CDCSourceConstants.DATABASE_DBNAME, sid).build();
                 } else {
-                    config = config.edit().with("database.dbname", dbName).build();
+                    config = config.edit().with(CDCSourceConstants.DATABASE_DBNAME, dbName).build();
                 }
 
                 //set the pdb name if specified
                 if (pdbName.equals("")) {
-                    config = config.edit().with("database.pdb.name", pdbName).build();
+                    config = config.edit().with(CDCSourceConstants.DATABASE_PDB_NAME, pdbName).build();
                 }
 
                 //set the xstream outbound server
-                config = config.edit().with("database.out.server.name", outServerName).build();
+                config = config.edit().with(CDCSourceConstants.DATABASE_OUT_SERVER_NAME, outServerName).build();
 
                 //set the specified oracle table to be monitored
                 //TODO: verify whitelist filter for oracle
-                config = config.edit().with("table.whitelist", tableName).build();
+                config = config.edit().with(CDCSourceConstants.TABLE_WHITELIST, tableName).build();
 
                 break;
             default:
@@ -119,34 +122,33 @@ class ChangeDataCapture implements Runnable {
         }
 
         //set hostname, username and the password for the connection
-        config = config.edit().with("database.hostname", host)
-                .with("database.user", username)
-                .with("database.password", password).build();
+        config = config.edit().with(CDCSourceConstants.DATABASE_HOSTNAME, host)
+                .with(CDCSourceConstants.DATABASE_USER, username)
+                .with(CDCSourceConstants.DATABASE_PASSWORD, password).build();
 
         //set the serverID
         if (serverID == -1) {
             Random random = new Random();
-            config = config.edit().with("server.id", random.ints(5400, 6400)).build();
+            config = config.edit().with(CDCSourceConstants.SERVER_ID, random.ints(5400, 6400)).build();
         } else {
-            config = config.edit().with("server.id", serverID).build();
+            config = config.edit().with(CDCSourceConstants.SERVER_ID, serverID).build();
         }
 
         //set the database server name if specified, otherwise set <host>_<port> as default
         if (serverName.equals("")) {
-            config = config.edit().with("database.server.name", host + "_" + port).build();
+            config = config.edit().with(CDCSourceConstants.DATABASE_SERVER_NAME, host + "_" + port).build();
         } else {
-            config = config.edit().with("database.server.name", serverName).build();
+            config = config.edit().with(CDCSourceConstants.DATABASE_SERVER_NAME, serverName).build();
         }
 
         //set the offset storage backing store class name and attach the cdcsource object.
-        config = config.edit().with("offset.storage",
+        config = config.edit().with(CDCSourceConstants.OFFSET_STORAGE,
                 InMemoryOffsetBackingStore.class.getName())
-                .with("cdc.source.object", cdcSource)
+                .with(CDCSourceConstants.CDC_SOURCE_OBJECT, cdcSource)
                 .build();
 
         //create the folders for history file if not exists
         File directory = new File(historyFileDirectory);
-// TODO: 9/27/18 verify here
         if (!directory.exists()) {
             boolean isDirectoryCreated = directory.mkdirs();
             if (isDirectoryCreated) {
@@ -155,14 +157,14 @@ class ChangeDataCapture implements Runnable {
         }
 
         //set history file path.
-        config = config.edit().with("database.history",
+        config = config.edit().with(CDCSourceConstants.DATABASE_HISTORY,
                 "io.debezium.relational.history.FileDatabaseHistory")
-                .with("database.history.file.filename",
+                .with(CDCSourceConstants.DATABASE_HISTORY_FILE_NAME,
                         historyFileDirectory + siddhiStreamName + ".dat").build();
 
 
         //set the offset.commit.policy to PeriodicSnapshotCommitOffsetPolicy.
-        config = config.edit().with("offset.commit.policy",
+        config = config.edit().with(CDCSourceConstants.OFFSET_COMMIT_POLICY,
                 PeriodicSnapshotCommitOffsetPolicy.class.getName()).build();
 
         //set connector property: name
@@ -195,9 +197,10 @@ class ChangeDataCapture implements Runnable {
     }
 
     void stopEngine() {
-        if (!engine.stop()) {
-            logger.debug("Engine already stopped!");
-        }
+        engine.stop();
+//        if (!engine.stop()) {
+//            logger.debug("Engine already stopped!");
+//        }
     }
 
     /**

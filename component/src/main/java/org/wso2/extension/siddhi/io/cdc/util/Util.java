@@ -193,25 +193,30 @@ public class Util {
      */
     // TODO: 8/31/18 discuss this to have a better way.
     public static String getStreamProcessorPath() {
-        String path = CdcSource.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        String decodedPath;
-        try {
-            decodedPath = URLDecoder.decode(path, "UTF-8");
-        } catch (Exception ex) {
-            return "";
-        }
-
-        int x = decodedPath.length() - 1;
-        int folderUpCharacterCount = 0;
-        int counter = 0;
-        while (folderUpCharacterCount < 2) {
-            if (Character.toString(decodedPath.charAt(x - counter)).equals("/")) {
-                folderUpCharacterCount++;
+        String path = System.getProperty("carbon.home");
+        if (path == null) {
+            path = CdcSource.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+            String decodedPath;
+            try {
+                decodedPath = URLDecoder.decode(path, "UTF-8");
+            } catch (Exception ex) {
+                return "";
             }
-            counter++;
-        }
 
-        decodedPath = decodedPath.substring(0, x - counter + 2);
-        return decodedPath;
+            int x = decodedPath.length() - 1;
+            int folderUpCharacterCount = 0;
+            int counter = 0;
+            while (folderUpCharacterCount < 2) {
+                if (Character.toString(decodedPath.charAt(x - counter)).equals("/")) {
+                    folderUpCharacterCount++;
+                }
+                counter++;
+            }
+
+            decodedPath = decodedPath.substring(0, x - counter + 2);
+            return decodedPath;
+        }
+        return path;
+
     }
 }

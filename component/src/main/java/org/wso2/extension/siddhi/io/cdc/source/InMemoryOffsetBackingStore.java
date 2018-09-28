@@ -23,6 +23,7 @@ import org.apache.kafka.connect.runtime.WorkerConfig;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wso2.extension.siddhi.io.cdc.util.CDCSourceConstants;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -41,7 +42,7 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
 
     public void configure(WorkerConfig config) {
         super.configure(config);
-        String cdcSourceObjectId = (String) config.originals().get("cdc.source.object");
+        String cdcSourceObjectId = (String) config.originals().get(CDCSourceConstants.CDC_SOURCE_OBJECT);
         cdcSource = CDCSourceObjectKeeper.getCdcObject(cdcSourceObjectId);
     }
 
@@ -58,6 +59,7 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
 
     private synchronized void load() {
         cache = cdcSource.getCache();
+        log.info("loaded size, " + cache.size());
 
         try {
             this.data = new HashMap<>();
@@ -69,14 +71,13 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
                 this.data.put(key, value);
             }
         } catch (Exception ex) {
-            log.error("error loading the in-memory offsets.");
-            // TODO: 9/27/18 verify here
-            log.error(ex.toString());
+            log.error("error loading the in-memory offsets.", ex);
         }
     }
 
     protected synchronized void save() {
         try {
+
             for (Object o : this.data.entrySet()) {
                 Map.Entry mapEntry = (Map.Entry) o;
                 byte[] key = mapEntry.getKey() != null ? ((ByteBuffer) mapEntry.getKey()).array() : null;
@@ -84,8 +85,45 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
                 cache.put(key, value);
             }
             cdcSource.setCache(cache);
+
         } catch (Exception var7) {
             throw new ConnectException(var7);
         }
     }
+//
+//    /**
+//     * Used to collect the serializable state of the processing element, that need to be
+//     * persisted for the reconstructing the element to the same state on a different point of time
+//     *
+//     * @return stateful objects of the processing element as an array
+//     */
+//    @Override
+//    public synchronized Map<String, Object> currentState() {
+//        Map<String, Object> currentState = new HashMap<>();
+//        currentState.put("cacheObj", cache);
+//        log.debug("current state called... " + cache.size());
+//
+//        return currentState;
+//    }
+//
+//    /**
+//     * Used to restore serialized state of the processing element, for reconstructing
+//     * the element to the same state as if was on a previous point of time.
+//     *
+//     * @param state the stateful objects of the element as an array on
+//     *              the same order provided by currentState().
+//     */
+//    @Override
+//    public synchronized void restoreState(Map<String, Object> state) {
+//        Object cacheObj = state.get("cacheObj");
+//        if (cacheObj instanceof HashMap) {
+//            this.cache = (HashMap<byte[], byte[]>) cacheObj;
+//        }
+//        log.debug("restore state called... " + cache.size());
+//    }
+//
+//    @Override
+//    public String getElementId() {
+//        return null;
+//    }
 }

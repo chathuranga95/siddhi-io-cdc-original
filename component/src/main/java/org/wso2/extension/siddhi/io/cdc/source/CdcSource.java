@@ -163,8 +163,8 @@ import java.util.concurrent.Future;
 
 public class CdcSource extends Source {
 
+    private static final Logger LOG = Logger.getLogger(CdcSource.class);
     final ExecutorService exService = Executors.newSingleThreadExecutor();
-    private final Logger logger = Logger.getLogger(CdcSource.class);
     private HashMap<byte[], byte[]> cache = new HashMap<>();
     private HashMap<String, String> connectorPropertiesMap = new HashMap<>();
     private String outboundServerName;
@@ -173,6 +173,7 @@ public class CdcSource extends Source {
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
     private String connectorProperties;
+
 
     /**
      * The initialization method for {@link Source}, will be called before other methods. It used to validate
@@ -189,7 +190,6 @@ public class CdcSource extends Source {
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder,
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
-
 
         String siddhiAppName = siddhiAppContext.getName();
         String streamName = sourceEventListener.getStreamDefinition().getId();
@@ -291,7 +291,7 @@ public class CdcSource extends Source {
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
         Future<?> submit = exService.submit(changeDataCapture);
-        logger.info(submit.isCancelled());
+        LOG.info(submit.isCancelled());
     }
 
     /**
@@ -335,6 +335,7 @@ public class CdcSource extends Source {
     public synchronized Map<String, Object> currentState() {
         Map<String, Object> currentState = new HashMap<>();
         currentState.put("cacheObj", cache);
+        LOG.info("current state cdc source inside got called");
 
         return currentState;
     }
@@ -352,6 +353,7 @@ public class CdcSource extends Source {
         if (cacheObj instanceof HashMap) {
             this.cache = (HashMap<byte[], byte[]>) cacheObj;
         }
+        LOG.info("restore state cdc source inside got called");
     }
 
     synchronized HashMap<byte[], byte[]> getCache() {

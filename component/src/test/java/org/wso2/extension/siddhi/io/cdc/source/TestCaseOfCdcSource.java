@@ -241,7 +241,8 @@ public class TestCaseOfCdcSource {
         });
 
         siddhiAppRuntime.start();
-        SiddhiTestHelper.waitForEvents(50, 500000, new AtomicInteger(50), 10000);
+        SiddhiTestHelper.waitForEvents(500, 999999999, new AtomicInteger(50), 10000);
+
 
         siddhiAppRuntime.shutdown();
     }

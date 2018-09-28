@@ -28,8 +28,10 @@ public class CDCSourceConstants {
     public static final String DATABASE_CONNECTION_URL = "url";
     public static final String OPERATION = "operation";
     public static final String DATABASE_HISTORY_FILE_DIRECTORY = "database.history.file.directory";
+    public static final String DATABASE_HISTORY_FILE_NAME = "database.history.file.filename";
     public static final String DATABASE_SERVER_NAME = "database.server.name";
     public static final String DATABASE_SERVER_ID = "database.server.id";
+    public static final String SERVER_ID = "server.id";
     public static final String DATABASE_OUT_SERVER_NAME = "database.out.server.name";
     public static final String TABLE_NAME = "table.name";
     public static final String DATABASE_DBNAME = "database.dbname";
@@ -39,4 +41,15 @@ public class CDCSourceConstants {
     public static final String INSERT = "insert";
     public static final String UPDATE = "update";
     public static final String DELETE = "delete";
+    public static final String CONNECTOR_CLASS = "connector.class";
+    public static final String DATABASE_PORT = "database.port";
+    public static final String TABLE_WHITELIST = "table.whitelist";
+    public static final String DATABASE_HOSTNAME = "database.hostname";
+    public static final String DATABASE_USER = "database.user";
+    public static final String DATABASE_PASSWORD = "database.password";
+    public static final String OFFSET_STORAGE = "offset.storage";
+    public static final String CDC_SOURCE_OBJECT = "cdc.source.object";
+    public static final String DATABASE_HISTORY = "database.history";
+    public static final String OFFSET_COMMIT_POLICY = "offset.commit.policy";
+
 }
