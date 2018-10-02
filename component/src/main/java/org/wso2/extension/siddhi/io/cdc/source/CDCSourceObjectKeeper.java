@@ -18,12 +18,16 @@
 
 package org.wso2.extension.siddhi.io.cdc.source;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 
 /**
  * This class Contains methods to store and retrieve the CdcSource objects.
  */
 class CDCSourceObjectKeeper {
+    private static final Logger LOG = LoggerFactory.getLogger(CDCSourceObjectKeeper.class);
     private static HashMap<String, CdcSource> objectMap = new HashMap<>();
 
     /**
@@ -31,6 +35,13 @@ class CDCSourceObjectKeeper {
      */
     static void addCdcObject(CdcSource cdcSource) {
         objectMap.put(cdcSource.toString(), cdcSource);
+    }
+
+    /**
+     * @param cdcSource is the CDCSource object to be removed from the objectMap.
+     */
+    static void removeObject(CdcSource cdcSource) {
+        objectMap.remove(cdcSource.toString());
     }
 
     /**

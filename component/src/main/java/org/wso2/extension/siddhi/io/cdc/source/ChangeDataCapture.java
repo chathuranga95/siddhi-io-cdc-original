@@ -166,10 +166,6 @@ class ChangeDataCapture implements Runnable {
         }
     }
 
-//    void stopEngine() {
-//        engine.stop();
-//    }
-
     /**
      * When an event is received, create and send the event details to the sourceEventListener.
      */

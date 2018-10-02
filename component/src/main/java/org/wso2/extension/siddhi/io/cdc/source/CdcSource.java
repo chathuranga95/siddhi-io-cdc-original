@@ -219,9 +219,6 @@ public class CdcSource extends Source {
         //send this object reference and preferred operation to changeDataCapture object
         changeDataCapture = new ChangeDataCapture(operation, this);
 
-        //keep the object reference in Object keeper
-        CDCSourceObjectKeeper.addCdcObject(this);
-
         try {
             changeDataCapture.setConfig(username, password, url, tableName, historyFileDirectory,
                     siddhiAppName, streamName, serverID, serverName, connectorPropertiesMap);
@@ -248,6 +245,9 @@ public class CdcSource extends Source {
      */
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
+        //keep the object reference in Object keeper
+        CDCSourceObjectKeeper.addCdcObject(this);
+
         Future<?> submit = exService.submit(changeDataCapture);
         LOG.debug("changeDataCapture Executive service submit cancel status :" + submit.isCancelled());
     }
@@ -264,6 +264,11 @@ public class CdcSource extends Source {
      */
     @Override
     public void destroy() {
+        //Remove this CdcSource object from the CDCObjectKeeper.
+        CDCSourceObjectKeeper.removeObject(this);
+
+        //shutdown the executor service.
+        exService.shutdown();
     }
 
     /**
@@ -334,7 +339,6 @@ public class CdcSource extends Source {
         } else if (!historyFileDirectory.endsWith("/")) {
             historyFileDirectory = historyFileDirectory + "/";
         }
-
 
         if (!connectorProperties.isEmpty()) {
             String[] keyValuePairs = connectorProperties.split(",");
