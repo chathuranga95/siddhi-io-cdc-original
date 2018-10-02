@@ -33,7 +33,7 @@ import java.util.Map;
  * This class saves and loads the change data offsets in in-memory.
  */
 public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
-    private static final Logger log = LoggerFactory.getLogger(InMemoryOffsetBackingStore.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InMemoryOffsetBackingStore.class);
     private volatile CdcSource cdcSource = null;
     private HashMap<byte[], byte[]> cache = new HashMap<>();
 
@@ -48,18 +48,17 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
 
     public synchronized void start() {
         super.start();
-        log.info("Started InMemoryOffsetBackingStore");
+        LOG.info("Started InMemoryOffsetBackingStore");
         this.load();
     }
 
     public synchronized void stop() {
         super.stop();
-        log.info("Stopped InMemoryOffsetBackingStore");
+        LOG.info("Stopped InMemoryOffsetBackingStore");
     }
 
     private synchronized void load() {
         cache = cdcSource.getCache();
-        log.info("loaded size, " + cache.size());
 
         try {
             this.data = new HashMap<>();
@@ -71,7 +70,7 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
                 this.data.put(key, value);
             }
         } catch (Exception ex) {
-            log.error("error loading the in-memory offsets.", ex);
+            LOG.error("error loading the in-memory offsets.", ex);
         }
     }
 
@@ -101,7 +100,7 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
 //    public synchronized Map<String, Object> currentState() {
 //        Map<String, Object> currentState = new HashMap<>();
 //        currentState.put("cacheObj", cache);
-//        log.debug("current state called... " + cache.size());
+//        LOG.debug("current state called... " + cache.size());
 //
 //        return currentState;
 //    }
@@ -119,7 +118,7 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
 //        if (cacheObj instanceof HashMap) {
 //            this.cache = (HashMap<byte[], byte[]>) cacheObj;
 //        }
-//        log.debug("restore state called... " + cache.size());
+//        LOG.debug("restore state called... " + cache.size());
 //    }
 //
 //    @Override

@@ -23,7 +23,7 @@ import io.debezium.embedded.EmbeddedEngine;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.CDCSourceConstants;
-import org.wso2.extension.siddhi.io.cdc.util.Util;
+import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
 import org.wso2.siddhi.core.exception.SiddhiAppRuntimeException;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 
@@ -57,19 +57,18 @@ class ChangeDataCapture implements Runnable {
     void setConfig(String username, String password, String url, String tableName
             , String historyFileDirectory, String siddhiAppName,
                    String siddhiStreamName, int serverID,
-                   String serverName, String outServerName, String dbName, String pdbName, HashMap<String,
+                   String serverName, HashMap<String,
             String> connectorPropertiesMap)
             throws WrongConfigurationException {
 
         config = Configuration.empty();
 
         //extract details from the url.
-        Map<String, String> urlDetails = Util.extractDetails(url);
+        Map<String, String> urlDetails = CDCSourceUtil.extractDetails(url);
         String schema = urlDetails.get("schema");
         String databaseName;
         String host = urlDetails.get("host");
         int port = Integer.parseInt(urlDetails.get("port"));
-        String sid;
 
 
         //set schema specific connector properties
@@ -87,36 +86,7 @@ class ChangeDataCapture implements Runnable {
                 //set the specified mysql table to be monitored
                 config = config.edit().with(CDCSourceConstants.TABLE_WHITELIST, databaseName + "." + tableName).build();
                 break;
-            case "oracle":
-                sid = urlDetails.get("sid");
-                config = config.edit().with(CDCSourceConstants.CONNECTOR_CLASS,
-                        "io.debezium.connector.oracle.OracleConnector").build();
-                if (port == -1) {
-                    config = config.edit().with(CDCSourceConstants.DATABASE_PORT, 1521).build();
-                } else {
-                    config = config.edit().with(CDCSourceConstants.DATABASE_PORT, port).build();
-                }
 
-                //set the dbname if specified, otherwise set sid as default
-                if (dbName.equals("")) {
-                    config = config.edit().with(CDCSourceConstants.DATABASE_DBNAME, sid).build();
-                } else {
-                    config = config.edit().with(CDCSourceConstants.DATABASE_DBNAME, dbName).build();
-                }
-
-                //set the pdb name if specified
-                if (pdbName.equals("")) {
-                    config = config.edit().with(CDCSourceConstants.DATABASE_PDB_NAME, pdbName).build();
-                }
-
-                //set the xstream outbound server
-                config = config.edit().with(CDCSourceConstants.DATABASE_OUT_SERVER_NAME, outServerName).build();
-
-                //set the specified oracle table to be monitored
-                //TODO: verify whitelist filter for oracle
-                config = config.edit().with(CDCSourceConstants.TABLE_WHITELIST, tableName).build();
-
-                break;
             default:
                 throw new WrongConfigurationException("Unsupported schema: " + schema);
         }
@@ -196,35 +166,21 @@ class ChangeDataCapture implements Runnable {
         }
     }
 
-    void stopEngine() {
-        engine.stop();
-//        if (!engine.stop()) {
-//            logger.debug("Engine already stopped!");
-//        }
-    }
+//    void stopEngine() {
+//        engine.stop();
+//    }
 
     /**
      * When an event is received, create and send the event details to the sourceEventListener.
      */
     private void handleEvent(ConnectRecord connectRecord) {
-        HashMap<String, Object> detailsMap = Util.createMap(connectRecord, operation);
+        HashMap<String, Object> detailsMap = CDCSourceUtil.createMap(connectRecord, operation);
 
         if (!detailsMap.isEmpty()) {
             sourceEventListener.onEvent(detailsMap, null);
         }
     }
 
-    /**
-     * When an object implementing interface <code>Runnable</code> is used
-     * to create a thread, starting the thread causes the object's
-     * <code>run</code> method to be called in that separately executing
-     * thread.
-     * <p>
-     * The general contract of the method <code>run</code> is that it may
-     * take any action whatsoever.
-     *
-     * @see Thread#run()
-     */
     @Override
     public void run() {
         captureChanges();

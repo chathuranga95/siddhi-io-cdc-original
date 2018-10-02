@@ -16,23 +16,16 @@ import java.util.regex.Pattern;
 /**
  * This class contains Util methods for the cdc extension.
  */
-public class Util {
+public class CDCSourceUtil {
 
     /**
      * Extract the details from the connection url and return as a HashMap.
-     * <p>
      * mysql===> jdbc:mysql://hostname:port/testdb
-     * oracle==> jdbc:oracle:thin:@hostname:port:SID
-     * or
-     * jdbc:oracle:thin:@hostname:port/SERVICE
-     * <p>
      * Hash map will include a subset of following elements according to the schema:
      * schema
      * host
      * port
      * database name
-     * SID
-     * driver
      *
      * @param url is the connection url given in the siddhi app
      */
@@ -41,9 +34,6 @@ public class Util {
         String host;
         int port;
         String database;
-        String driver;
-        String sid;
-        String service;
 
         String[] splittedURL = url.split(":");
         if (!splittedURL[0].equals("jdbc")) {
@@ -68,46 +58,6 @@ public class Util {
                     }
 
                     details.put("database", database);
-
-                    break;
-                }
-                case "oracle": {
-
-                    details.put("schema", "oracle");
-
-                    String regex = "jdbc:oracle:(thin|oci):@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):" +
-                            "(\\d++):(\\w*)";
-                    Pattern p = Pattern.compile(regex);
-
-                    Matcher matcher = p.matcher(url);
-                    if (matcher.find()) {
-                        driver = matcher.group(1);
-                        host = matcher.group(2);
-                        port = Integer.parseInt(matcher.group(3));
-                        sid = matcher.group(4);
-
-                        details.put("sid", sid);
-
-                    } else {
-                        //check for the service type url
-                        String regexService = "jdbc:oracle:(thin|oci):" +
-                                "@(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):(\\d++)/(\\w*)";
-                        Pattern patternService = Pattern.compile(regexService);
-
-                        Matcher matcherService = patternService.matcher(url);
-                        if (matcherService.find()) {
-                            driver = matcherService.group(1);
-                            host = matcherService.group(2);
-                            port = Integer.parseInt(matcherService.group(3));
-                            service = matcherService.group(4);
-
-                        } else {
-                            throw new IllegalArgumentException("Invalid oracle JDBC url.");
-                        }
-                        details.put("service", service);
-                    }
-
-                    details.put("driver", driver);
 
                     break;
                 }
@@ -191,7 +141,6 @@ public class Util {
     /**
      * Get the WSO2 Stream Processor's local path.
      */
-    // TODO: 8/31/18 discuss this to have a better way.
     public static String getStreamProcessorPath() {
         String path = System.getProperty("carbon.home");
         if (path == null) {
@@ -217,6 +166,5 @@ public class Util {
             return decodedPath;
         }
         return path;
-
     }
 }

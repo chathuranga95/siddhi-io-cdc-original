@@ -3,7 +3,7 @@ package org.wso2.extension.siddhi.io.cdc.source;
 import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.wso2.extension.siddhi.io.cdc.util.Util;
+import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
@@ -30,7 +30,7 @@ public class TestCaseOfCdcSource {
 
         String url1 = "jdbc:oracle:thin:@localhost:1521/oracle";
 
-        Map<String, String> details = Util.extractDetails(url1);
+        Map<String, String> details = CDCSourceUtil.extractDetails(url1);
 
         Map<String, String> expectedDetails = new HashMap<>();
         expectedDetails.put("host", "localhost");
@@ -48,7 +48,7 @@ public class TestCaseOfCdcSource {
 
         String url1 = "jdbc:oracle:thin:@localhost:1522:XE";
 
-        Map<String, String> details = Util.extractDetails(url1);
+        Map<String, String> details = CDCSourceUtil.extractDetails(url1);
 
         Map<String, String> expectedDetails = new HashMap<>();
         expectedDetails.put("schema", "oracle");
@@ -66,7 +66,7 @@ public class TestCaseOfCdcSource {
 
         String url1 = "jdbc:mysql://172.17.0.1:3306/testdb";
 
-        Map<String, String> details = Util.extractDetails(url1);
+        Map<String, String> details = CDCSourceUtil.extractDetails(url1);
 
         Map<String, String> expectedDetails = new HashMap<>();
         expectedDetails.put("schema", "mysql");
@@ -83,7 +83,7 @@ public class TestCaseOfCdcSource {
 
         String url1 = "jdbc:mysql://localhost:3306/testdb";
 
-        Map<String, String> details = Util.extractDetails(url1);
+        Map<String, String> details = CDCSourceUtil.extractDetails(url1);
 
         Map<String, String> expectedDetails = new HashMap<>();
         expectedDetails.put("schema", "mysql");

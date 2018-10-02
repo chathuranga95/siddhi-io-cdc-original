@@ -32,10 +32,7 @@ public class CDCSourceConstants {
     public static final String DATABASE_SERVER_NAME = "database.server.name";
     public static final String DATABASE_SERVER_ID = "database.server.id";
     public static final String SERVER_ID = "server.id";
-    public static final String DATABASE_OUT_SERVER_NAME = "database.out.server.name";
     public static final String TABLE_NAME = "table.name";
-    public static final String DATABASE_DBNAME = "database.dbname";
-    public static final String DATABASE_PDB_NAME = "database.pdb.name";
     public static final String CONNECTOR_PROPERTIES = "connector.properties";
     public static final String EMPTY_STRING = "";
     public static final String INSERT = "insert";
@@ -51,5 +48,4 @@ public class CDCSourceConstants {
     public static final String CDC_SOURCE_OBJECT = "cdc.source.object";
     public static final String DATABASE_HISTORY = "database.history";
     public static final String OFFSET_COMMIT_POLICY = "offset.commit.policy";
-
 }

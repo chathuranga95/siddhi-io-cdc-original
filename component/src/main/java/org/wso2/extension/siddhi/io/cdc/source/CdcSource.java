@@ -20,7 +20,7 @@ package org.wso2.extension.siddhi.io.cdc.source;
 
 import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.CDCSourceConstants;
-import org.wso2.extension.siddhi.io.cdc.util.Util;
+import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
@@ -59,8 +59,7 @@ import java.util.concurrent.Future;
                 @Parameter(name = "url",
                         description = "Connection url to the database." +
                                 "use format:" +
-                                "for mysql--> jdbc:mysql://<host>:<port>/<database_name> " +
-                                "for oracle--> jdbc:oracle:<driver>:@<host>:<port>:<SID>",
+                                "jdbc:mysql://<host>:<port>/<database_name> ",
                         type = DataType.STRING
                 ),
                 @Parameter(
@@ -109,22 +108,6 @@ import java.util.concurrent.Future;
                                 " This is used when joining MySQL database cluster to read binlog",
                         defaultValue = "<random integer between 5400 and 6400>",
                         possibleParameters = {"<Unique server id to connect to the database cluster>"}
-                ),
-                @SystemParameter(name = "database.out.server.name",
-                        description = "Oracle Xstream outbound server name for Oracle. Required for Oracle database",
-                        defaultValue = "<not applicable>",
-                        possibleParameters = {"<oracle's outbound server name>"}
-                ),
-                @SystemParameter(name = "database.dbname",
-                        description = "Name of the database to connect to. Must be the CDB name" +
-                                " when working with the CDB + PDB model.",
-                        defaultValue = "{sid}",
-                        possibleParameters = {"<SID>"}
-                ),
-                @SystemParameter(name = "database.pdb.name",
-                        description = "Name of the PDB to connect to. Required when working with the CDB + PDB model.",
-                        defaultValue = "<not applicable>",
-                        possibleParameters = {"<Pluggable database name>"}
                 )
         },
         examples = {
@@ -164,11 +147,10 @@ import java.util.concurrent.Future;
 public class CdcSource extends Source {
 
     private static final Logger LOG = Logger.getLogger(CdcSource.class);
-    final ExecutorService exService = Executors.newSingleThreadExecutor();
+    private final ExecutorService exService = Executors.newSingleThreadExecutor();
     private HashMap<byte[], byte[]> cache = new HashMap<>();
     private HashMap<String, String> connectorPropertiesMap = new HashMap<>();
-    private String outboundServerName;
-    private String url;
+
     private String operation;
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
@@ -195,7 +177,7 @@ public class CdcSource extends Source {
         String streamName = sourceEventListener.getStreamDefinition().getId();
 
         //initialize mandatory parameters
-        url = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_CONNECTION_URL).getValue();
+        String url = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_CONNECTION_URL).getValue();
         String tableName = optionHolder.validateAndGetOption(CDCSourceConstants.TABLE_NAME).getValue();
         String username = optionHolder.validateAndGetOption(CDCSourceConstants.USERNAME).getValue();
         String password = optionHolder.validateAndGetOption(CDCSourceConstants.PASSWORD).getValue();
@@ -209,7 +191,7 @@ public class CdcSource extends Source {
         } else {
             historyFileDirectory = configReader.readConfig(
                     CDCSourceConstants.DATABASE_HISTORY_FILE_DIRECTORY,
-                    Util.getStreamProcessorPath() + "cdc/history/" + siddhiAppName + "/");
+                    CDCSourceUtil.getStreamProcessorPath() + "cdc/history/" + siddhiAppName + "/");
         }
 
         int serverID;
@@ -228,29 +210,6 @@ public class CdcSource extends Source {
                     CDCSourceConstants.EMPTY_STRING);
         }
 
-        if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_OUT_SERVER_NAME)) {
-            outboundServerName = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_OUT_SERVER_NAME)
-                    .getValue();
-        } else {
-            outboundServerName = configReader.readConfig(CDCSourceConstants.DATABASE_OUT_SERVER_NAME,
-                    CDCSourceConstants.EMPTY_STRING);
-        }
-
-        String dbName;
-        if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_DBNAME)) {
-            dbName = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_DBNAME).getValue();
-        } else {
-            dbName = configReader.readConfig(CDCSourceConstants.DATABASE_DBNAME,
-                    CDCSourceConstants.EMPTY_STRING);
-        }
-
-        String pdbName;
-        if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_PDB_NAME)) {
-            pdbName = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_PDB_NAME).getValue();
-        } else {
-            pdbName = configReader.readConfig(CDCSourceConstants.DATABASE_PDB_NAME, CDCSourceConstants.EMPTY_STRING);
-        }
-
         //initialize parameters from connector.properties
         connectorProperties = optionHolder.validateAndGetStaticValue(CDCSourceConstants.CONNECTOR_PROPERTIES,
                 CDCSourceConstants.EMPTY_STRING);
@@ -258,15 +217,14 @@ public class CdcSource extends Source {
         validateParameter();
 
         //send this object reference and preferred operation to changeDataCapture object
-        this.changeDataCapture = new ChangeDataCapture(operation, this);
+        changeDataCapture = new ChangeDataCapture(operation, this);
 
         //keep the object reference in Object keeper
         CDCSourceObjectKeeper.addCdcObject(this);
 
         try {
             changeDataCapture.setConfig(username, password, url, tableName, historyFileDirectory,
-                    siddhiAppName, streamName, serverID, serverName,
-                    outboundServerName, dbName, pdbName, connectorPropertiesMap);
+                    siddhiAppName, streamName, serverID, serverName, connectorPropertiesMap);
             changeDataCapture.setSourceEventListener(sourceEventListener);
         } catch (ChangeDataCapture.WrongConfigurationException ex) {
             throw new SiddhiAppCreationException("The cdc source couldn't get started. Invalid" +
@@ -291,7 +249,7 @@ public class CdcSource extends Source {
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
         Future<?> submit = exService.submit(changeDataCapture);
-        LOG.info(submit.isCancelled());
+        LOG.debug("changeDataCapture Executive service submit cancel status :" + submit.isCancelled());
     }
 
     /**
@@ -299,7 +257,6 @@ public class CdcSource extends Source {
      */
     @Override
     public void disconnect() {
-        changeDataCapture.stopEngine();
     }
 
     /**
@@ -335,7 +292,6 @@ public class CdcSource extends Source {
     public synchronized Map<String, Object> currentState() {
         Map<String, Object> currentState = new HashMap<>();
         currentState.put("cacheObj", cache);
-        LOG.info("current state cdc source inside got called");
 
         return currentState;
     }
@@ -353,7 +309,6 @@ public class CdcSource extends Source {
         if (cacheObj instanceof HashMap) {
             this.cache = (HashMap<byte[], byte[]>) cacheObj;
         }
-        LOG.info("restore state cdc source inside got called");
     }
 
     synchronized HashMap<byte[], byte[]> getCache() {
@@ -380,9 +335,6 @@ public class CdcSource extends Source {
             historyFileDirectory = historyFileDirectory + "/";
         }
 
-        if (Util.extractDetails(url).get("schema").equals("oracle") && outboundServerName.isEmpty()) {
-            throw new SiddhiAppValidationException("database.out.server.name must be given for the oracle database.");
-        }
 
         if (!connectorProperties.isEmpty()) {
             String[] keyValuePairs = connectorProperties.split(",");

@@ -23,7 +23,7 @@
     </tr>
     <tr>
         <td style="vertical-align: top">url</td>
-        <td style="vertical-align: top; word-wrap: break-word">Connection url to the database.use format:for mysql--&gt; jdbc:mysql://&lt;host&gt;:&lt;port&gt;/&lt;database_name&gt; for oracle--&gt; jdbc:oracle:&lt;driver&gt;:@&lt;host&gt;:&lt;port&gt;:&lt;SID&gt;</td>
+        <td style="vertical-align: top; word-wrap: break-word">Connection url to the database.use format:jdbc:mysql://&lt;host&gt;:&lt;port&gt;/&lt;database_name&gt; </td>
         <td style="vertical-align: top"></td>
         <td style="vertical-align: top">STRING</td>
         <td style="vertical-align: top">No</td>
@@ -96,24 +96,6 @@
         <td style="vertical-align: top; word-wrap: break-word">For MySQL, a unique integer between 1 to 2^32 as the ID, This is used when joining MySQL database cluster to read binlog</td>
         <td style="vertical-align: top"><random integer between 5400 and 6400></td>
         <td style="vertical-align: top"><Unique server id to connect to the database cluster></td>
-    </tr>
-    <tr>
-        <td style="vertical-align: top">database.out.server.name</td>
-        <td style="vertical-align: top; word-wrap: break-word">Oracle Xstream outbound server name for Oracle. Required for Oracle database</td>
-        <td style="vertical-align: top"><not applicable></td>
-        <td style="vertical-align: top"><oracle's outbound server name></td>
-    </tr>
-    <tr>
-        <td style="vertical-align: top">database.dbname</td>
-        <td style="vertical-align: top; word-wrap: break-word">Name of the database to connect to. Must be the CDB name when working with the CDB + PDB model.</td>
-        <td style="vertical-align: top">{sid}</td>
-        <td style="vertical-align: top"><SID></td>
-    </tr>
-    <tr>
-        <td style="vertical-align: top">database.pdb.name</td>
-        <td style="vertical-align: top; word-wrap: break-word">Name of the PDB to connect to. Required when working with the CDB + PDB model.</td>
-        <td style="vertical-align: top"><not applicable></td>
-        <td style="vertical-align: top"><Pluggable database name></td>
     </tr>
 </table>
 
