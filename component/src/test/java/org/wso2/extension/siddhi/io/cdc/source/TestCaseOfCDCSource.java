@@ -43,8 +43,9 @@ public class TestCaseOfCDCSource {
 
     private static final Logger logger = Logger.getLogger(TestCaseOfCDCSource.class);
 
-    // TODO: 10/4/18 add discriptions
-
+    /**
+     * Test case to extract details from URL with service name for Oracle
+     */
     @Test
     public void urldetailExtractionOracle1() {
 
@@ -63,6 +64,9 @@ public class TestCaseOfCDCSource {
 
     }
 
+    /**
+     * Test case to extract details from URL with SID for Oracle
+     */
     @Test
     public void urldetailExtractionOracle2() {
 
@@ -81,6 +85,10 @@ public class TestCaseOfCDCSource {
 
     }
 
+    /**
+     * Test case to extract details from URL for MySQL.
+     * host appear as an ip.
+     */
     @Test
     public void urldetailExtractionMysql1() {
 
@@ -98,6 +106,10 @@ public class TestCaseOfCDCSource {
 
     }
 
+    /**
+     * Test case to extract details from URL for Oracle
+     * host appear as a name.
+     */
     @Test
     public void urldetailExtractionMysql2() {
 
@@ -115,6 +127,10 @@ public class TestCaseOfCDCSource {
 
     }
 
+    /**
+     * Test case to Capture Insert operations from a MySQL table.
+     * Offset data persistence is enabled.
+     */
     @Test
     public void cdcInsertOperationMysql() throws InterruptedException {
         logger.info("persistence test - cdc");
@@ -195,6 +211,9 @@ public class TestCaseOfCDCSource {
         // use fabric8
     }
 
+    /**
+     * Test case to Capture Delete operations from a MySQL table.
+     */
     @Test
     public void cdcDeleteOperationMysql() throws InterruptedException {
         logger.info("------------------------------------------------------------------------------------------------");
@@ -232,6 +251,9 @@ public class TestCaseOfCDCSource {
         siddhiAppRuntime.shutdown();
     }
 
+    /**
+     * Test case to Capture insert operations from a MySQL table.
+     */
     @Test
     public void cdcInsertOperationMysql2() throws InterruptedException {
         logger.info("------------------------------------------------------------------------------------------------");
@@ -270,6 +292,9 @@ public class TestCaseOfCDCSource {
         siddhiAppRuntime.shutdown();
     }
 
+    /**
+     * Test case to Capture Update operations from a MySQL table.
+     */
     @Test
     public void cdcUpdateOperationMysql() throws InterruptedException {
         logger.info("------------------------------------------------------------------------------------------------");
@@ -307,6 +332,9 @@ public class TestCaseOfCDCSource {
         siddhiAppRuntime.shutdown();
     }
 
+    /**
+     * Test case to Capture Insert operations from an Oracle table.
+     */
     @Test
     public void cdcInsertOperationOracle() throws InterruptedException {
         logger.info("------------------------------------------------------------------------------------------------");
