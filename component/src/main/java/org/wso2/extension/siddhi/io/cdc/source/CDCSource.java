@@ -24,7 +24,6 @@ import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
 import org.wso2.siddhi.annotation.Example;
 import org.wso2.siddhi.annotation.Extension;
 import org.wso2.siddhi.annotation.Parameter;
-import org.wso2.siddhi.annotation.SystemParameter;
 import org.wso2.siddhi.annotation.util.DataType;
 import org.wso2.siddhi.core.config.SiddhiAppContext;
 import org.wso2.siddhi.core.exception.ConnectionUnavailableException;
@@ -35,108 +34,110 @@ import org.wso2.siddhi.core.util.config.ConfigReader;
 import org.wso2.siddhi.core.util.transport.OptionHolder;
 import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-
 /**
- * Extension to the WSO2 Stream Processor to retrieve Database Changes - implementation of cdc source.
+ * Extension to the siddhi to retrieve Database Changes - implementation of cdc source.
  **/
 @Extension(
         name = "cdc",
         namespace = "source",
-        description = "The cdc source receives events when the MySQL database's change event " +
+        description = "The CDC source receives events when a specified MySQL table's change event " +
                 "(INSERT, UPDATE, DELETE) is triggered. The events are received in key-value map format." +
-                "The following are key values of the map of a cdc change event and their descriptions.\n" +
-                "X : The table's column X value after the event occurred. Applicable when 'insert' or 'update'" +
-                " operations are specified. \n" +
-                "before_X : The table's column X value before the event occurred. Applicable when 'delete' or " +
-                "'update' operations are specified.\n",
+                "\nThe following are key values of the map of a CDC change event and their descriptions." +
+                "\n\tFor insert: Keys will be specified table's columns" +
+                "\n\tFor delete: Keys will be 'before_' followed by specified table's columns. Eg: before_X" +
+                "\n\tFor update: Keys will be specified table's columns and 'before_' followed by specified table's " +
+                "columns.",
         parameters = {
                 @Parameter(name = "url",
                         description = "Connection url to the database." +
-                                "use format:" +
+                                "\nuse format: " +
                                 "jdbc:mysql://<host>:<port>/<database_name> ",
                         type = DataType.STRING
                 ),
                 @Parameter(
                         name = "username",
-                        description = "Username of the user created in the prerequisites",
+                        description = "Username of a user with SELECT, RELOAD, SHOW DATABASES," +
+                                " REPLICATION SLAVE, REPLICATION CLIENT privileges on Change Data Capturing table.",
                         type = DataType.STRING
                 ),
                 @Parameter(
                         name = "password",
-                        description = "Password for the user",
+                        description = "Password for the above user.",
                         type = DataType.STRING
                 ),
                 @Parameter(
                         name = "table.name",
-                        description = "Name of the table which needs to be monitored for data changes",
+                        description = "Name of the table which needs to be monitored for data changes.",
                         type = DataType.STRING
                 ),
                 @Parameter(
                         name = "operation",
-                        description = "interested change event name. 'insert', 'update' or 'delete'",
+                        description = "Interested change event operation. 'insert', 'update' or 'delete'. " +
+                                "\nNot case sensitive.",
                         type = DataType.STRING
                 ),
                 @Parameter(
                         name = "connector.properties",
                         description = "Debezium connector specified properties as a comma separated string. " +
-                                "Previously set values will be overridden by this properties.",
+                                "\nThis properties will have more priority over the parameters.",
                         type = DataType.STRING,
                         optional = true,
                         defaultValue = "<Empty_String>"
-                )
-        },
-        systemParameter = {
-                @SystemParameter(name = "database.history.file.directory",
-                        description = "Path to store database schema history changes.",
-                        defaultValue = "{WSO2SP_HOME}/cdc/history/{SiddhiAppName}",
-                        possibleParameters = {"<Any user Read/Writable directory>"}
                 ),
-                @SystemParameter(name = "database.server.name",
+                @Parameter(name = "database.server.id",
+                        description = "For MySQL, a unique integer between 1 to 2^32 as the ID," +
+                                " This is used when joining MySQL database cluster to read binlog",
+                        type = DataType.STRING,
+                        optional = true,
+                        defaultValue = "<random integer between 5400 and 6400>"
+                ),
+                @Parameter(name = "database.server.name",
                         description = "Logical name that identifies and provides a namespace for the " +
                                 "particular database server",
                         defaultValue = "{host}_{port}",
-                        possibleParameters = {"<Unique name to connect to the database cluster>"}
-                ),
-                @SystemParameter(name = "database.server.id",
-                        description = "For MySQL, a unique integer between 1 to 2^32 as the ID," +
-                                " This is used when joining MySQL database cluster to read binlog",
-                        defaultValue = "<random integer between 5400 and 6400>",
-                        possibleParameters = {"<Unique server id to connect to the database cluster>"}
+                        optional = true,
+                        type = DataType.STRING
                 )
         },
         examples = {
                 @Example(
-                        syntax = "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB'," +
-                                " username = 'cdcuser', password = 'pswd4cdc', table.name = 'students'," +
-                                " operation = 'insert', @map(type='keyvalue', @attributes(id = 'id', name = 'name')))" +
-                                "define stream inputStream (id string, name string);",
-                        description = "In this example, the cdc source starts listening to the row insertions" +
-                                " on students table which is under MySQL SimpleDB database that" +
+                        syntax = "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB', " +
+                                "\nusername = 'cdcuser', password = 'pswd4cdc', " +
+                                "\ntable.name = 'students', operation = 'insert', " +
+                                "\n@map(type='keyvalue', @attributes(id = 'id', name = 'name')))" +
+                                "\ndefine stream inputStream (id string, name string);",
+                        description = "In this example, the cdc source starts listening to the row insertions " +
+                                " on students table with columns name and id which is under MySQL" +
+                                " SimpleDB database that" +
                                 " can be accessed with the given url"
                 ),
                 @Example(
-                        syntax = "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB'," +
-                                " username = 'cdcuser', password = 'pswd4cdc', table.name = 'students'," +
-                                " operation = 'update', @map(type='keyvalue', @attributes(id = 'id', name = 'name', " +
-                                "before_id = 'before_id', before_name = 'before_name')))" +
-                                "define stream inputStream (id string, name string, before_id string," +
-                                " before_name string);",
+                        syntax = "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB', " +
+                                "\nusername = 'cdcuser', password = 'pswd4cdc', " +
+                                "\ntable.name = 'students', operation = 'update', " +
+                                "\n@map(type='keyvalue', @attributes(id = 'id', name = 'name', " +
+                                "\nbefore_id = 'before_id', before_name = 'before_name')))" +
+                                "\ndefine stream inputStream (before_id string, id string, " +
+                                "\nbefore_name string, ," +
+                                " name string);",
                         description = "In this example, the cdc source starts listening to the row updates" +
                                 " on students table which is under MySQL SimpleDB database that" +
                                 " can be accessed with the given url"
                 ),
                 @Example(
-                        syntax = "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB'," +
-                                " username = 'cdcuser', password = 'pswd4cdc', table.name = 'students'," +
-                                " operation = 'delete', @map(type='keyvalue', @attributes(before_id = 'before_id'," +
+                        syntax = "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB', " +
+                                "\nusername = 'cdcuser', password = 'pswd4cdc', " +
+                                "\ntable.name = 'students', operation = 'delete', " +
+                                "\n@map(type='keyvalue', @attributes(before_id = 'before_id'," +
                                 " before_name = 'before_name')))" +
-                                "define stream inputStream (before_id string, before_name string);",
+                                "\ndefine stream inputStream (before_id string, before_name string);",
                         description = "In this example, the cdc source starts listening to the row deletions" +
                                 " on students table which is under MySQL SimpleDB database that" +
                                 " can be accessed with the given url"
@@ -144,17 +145,16 @@ import java.util.concurrent.Future;
         }
 )
 
-public class CdcSource extends Source {
-
-    private static final Logger LOG = Logger.getLogger(CdcSource.class);
-    private final ExecutorService exService = Executors.newSingleThreadExecutor();
-    private HashMap<byte[], byte[]> cache = new HashMap<>();
-    private HashMap<String, String> connectorPropertiesMap = new HashMap<>();
-
+public class CDCSource extends Source {
+    private static final Logger log = Logger.getLogger(CDCSource.class);
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private Map<byte[], byte[]> offsetData = new HashMap<>();
+    private Map<String, String> connectorPropertiesMap = new HashMap<>();
     private String operation;
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
     private String connectorProperties;
+    private CDCSourceObjectKeeper cdcSourceObjectKeeper = CDCSourceObjectKeeper.getCdcSourceObjectKeeper();
 
 
     /**
@@ -165,7 +165,7 @@ public class CdcSource extends Source {
      *                            Listener will then pass on the events to the appropriate mappers for processing .
      * @param optionHolder        Option holder containing static configuration related to the {@link Source}
      * @param configReader        ConfigReader is used to read the {@link Source} related system configuration.
-     * @param siddhiAppContext    the context of the {@link org.wso2.siddhi.query.api.SiddhiApp} used to get Siddhi
+     * @param siddhiAppContext    The context of the {@link org.wso2.siddhi.query.api.SiddhiApp} used to get Siddhi
      *                            related utility functions.
      */
     @Override
@@ -183,47 +183,35 @@ public class CdcSource extends Source {
         String password = optionHolder.validateAndGetOption(CDCSourceConstants.PASSWORD).getValue();
         operation = optionHolder.validateAndGetOption(CDCSourceConstants.OPERATION).getValue();
 
-        //initialize system parameters from annotations, deployment config file or default values
-
-        if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_HISTORY_FILE_DIRECTORY)) {
-            historyFileDirectory = optionHolder.validateAndGetOption(
-                    CDCSourceConstants.DATABASE_HISTORY_FILE_DIRECTORY).getValue();
-        } else {
-            historyFileDirectory = configReader.readConfig(
-                    CDCSourceConstants.DATABASE_HISTORY_FILE_DIRECTORY,
-                    CDCSourceUtil.getStreamProcessorPath() + "cdc/history/" + siddhiAppName + "/");
-        }
-
+        //initialize optional parameters
         int serverID;
-        if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_SERVER_ID)) {
-            serverID = Integer.parseInt(optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_SERVER_ID)
-                    .getValue());
-        } else {
-            serverID = Integer.parseInt(configReader.readConfig(CDCSourceConstants.DATABASE_SERVER_ID, "-1"));
-        }
+        serverID = Integer.parseInt(optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_SERVER_ID,
+                "-1"));
 
         String serverName;
-        if (optionHolder.isOptionExists(CDCSourceConstants.DATABASE_SERVER_NAME)) {
-            serverName = optionHolder.validateAndGetOption(CDCSourceConstants.DATABASE_SERVER_NAME).getValue();
-        } else {
-            serverName = configReader.readConfig(CDCSourceConstants.DATABASE_SERVER_NAME,
-                    CDCSourceConstants.EMPTY_STRING);
-        }
+        serverName = optionHolder.validateAndGetStaticValue(CDCSourceConstants.DATABASE_SERVER_NAME,
+                CDCSourceConstants.EMPTY_STRING);
 
         //initialize parameters from connector.properties
         connectorProperties = optionHolder.validateAndGetStaticValue(CDCSourceConstants.CONNECTOR_PROPERTIES,
                 CDCSourceConstants.EMPTY_STRING);
 
+        //initialize history file directory
+        historyFileDirectory = CDCSourceUtil.getStreamProcessorPath() + "cdc" + File.separator + "history"
+                + File.separator + siddhiAppName + File.separator;
+
         validateParameter();
 
         //send this object reference and preferred operation to changeDataCapture object
-        changeDataCapture = new ChangeDataCapture(operation, this);
+        changeDataCapture = new ChangeDataCapture(operation, this.hashCode());
+
+        //TODO: 10/4/18 add config details of different schemas into a map and then pass it into the set config
 
         try {
             changeDataCapture.setConfig(username, password, url, tableName, historyFileDirectory,
                     siddhiAppName, streamName, serverID, serverName, connectorPropertiesMap);
             changeDataCapture.setSourceEventListener(sourceEventListener);
-        } catch (ChangeDataCapture.WrongConfigurationException ex) {
+        } catch (WrongConfigurationException ex) {
             throw new SiddhiAppCreationException("The cdc source couldn't get started. Invalid" +
                     " configuration parameters.");
         }
@@ -245,11 +233,14 @@ public class CdcSource extends Source {
      */
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
+        // TODO: 10/4/18 if some error occurs, throw the exception
+        // TODO: 10/5/18 get the events to here and submit, don't send this object
         //keep the object reference in Object keeper
-        CDCSourceObjectKeeper.addCdcObject(this);
+        cdcSourceObjectKeeper.addCdcObject(this);
 
-        Future<?> submit = exService.submit(changeDataCapture);
-        LOG.debug("changeDataCapture Executive service submit cancel status :" + submit.isCancelled());
+        Future<?> submit = executorService.submit(changeDataCapture.getEngine());
+//        (new Thread(changeDataCapture.getEngine())).start();
+        log.debug("changeDataCapture Executive service submit cancel status :" + submit.isCancelled());
     }
 
     /**
@@ -264,11 +255,11 @@ public class CdcSource extends Source {
      */
     @Override
     public void destroy() {
-        //Remove this CdcSource object from the CDCObjectKeeper.
-        CDCSourceObjectKeeper.removeObject(this);
+        //Remove this CDCSource object from the CDCObjectKeeper.
+        cdcSourceObjectKeeper.removeObject(this.hashCode());
 
         //shutdown the executor service.
-        exService.shutdown();
+        executorService.shutdown();
     }
 
     /**
@@ -276,7 +267,7 @@ public class CdcSource extends Source {
      */
     @Override
     public void pause() {
-
+// TODO: 10/4/18 use thread locking to implement
     }
 
     /**
@@ -296,8 +287,8 @@ public class CdcSource extends Source {
     @Override
     public synchronized Map<String, Object> currentState() {
         Map<String, Object> currentState = new HashMap<>();
-        currentState.put("cacheObj", cache);
-
+        currentState.put("cacheObj", offsetData);
+//
         return currentState;
     }
 
@@ -311,33 +302,35 @@ public class CdcSource extends Source {
     @Override
     public synchronized void restoreState(Map<String, Object> map) {
         Object cacheObj = map.get("cacheObj");
-        if (cacheObj instanceof HashMap) {
-            this.cache = (HashMap<byte[], byte[]>) cacheObj;
-        }
+//        if (cacheObj instanceof HashMap) {
+        this.offsetData = (HashMap<byte[], byte[]>) cacheObj;
+//        }
     }
 
-    synchronized HashMap<byte[], byte[]> getCache() {
-        return cache;
+    synchronized Map<byte[], byte[]> getOffsetData() {
+        return offsetData;
     }
 
-    synchronized void setCache(HashMap<byte[], byte[]> cache) {
-        this.cache = cache;
+    synchronized void setCache(Map<byte[], byte[]> offsetData) {
+        this.offsetData = offsetData;
     }
 
     /**
      * Used to Validate the parameters.
      */
     private void validateParameter() {
-        if (!(operation.equals(CDCSourceConstants.INSERT) || operation.equals(CDCSourceConstants.UPDATE)
-                || operation.equals(CDCSourceConstants.DELETE))) {
+        if (!(operation.equalsIgnoreCase(CDCSourceConstants.INSERT)
+                || operation.equalsIgnoreCase(CDCSourceConstants.UPDATE)
+                || operation.equalsIgnoreCase(CDCSourceConstants.DELETE))) {
             throw new SiddhiAppValidationException("operation should be one of 'insert', 'update' or 'delete'");
         }
 
+        // TODO: 10/4/18 all the exceptions should have context
         if (historyFileDirectory.isEmpty()) {
             throw new SiddhiAppValidationException("Couldn't set the database.history.file.directory automatically." +
                     " Please set the parameter.");
-        } else if (!historyFileDirectory.endsWith("/")) {
-            historyFileDirectory = historyFileDirectory + "/";
+        } else if (!historyFileDirectory.endsWith(File.separator)) {
+            historyFileDirectory = historyFileDirectory + File.separator;
         }
 
         if (!connectorProperties.isEmpty()) {

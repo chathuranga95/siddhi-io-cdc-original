@@ -1,5 +1,5 @@
 package org.wso2.extension.siddhi.io.cdc.source;
-
+// TODO: 10/4/18 liscence
 import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -21,9 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.AssertJUnit.assertEquals;
 
-public class TestCaseOfCdcSource {
+public class TestCaseOfCDCSource {
 
-    private static final Logger logger = Logger.getLogger(TestCaseOfCdcSource.class);
+    private static final Logger logger = Logger.getLogger(TestCaseOfCDCSource.class);
+
+    // TODO: 10/4/18 add discriptions
 
     @Test
     public void urldetailExtractionOracle1() {
@@ -145,6 +147,7 @@ public class TestCaseOfCdcSource {
         //restarting siddhi app
         Thread.sleep(5000);
         siddhiAppRuntime.shutdown();
+        // TODO: 10/4/18 don't create a new one
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
         siddhiAppRuntime.addCallback("query1", new QueryCallback() {
             @Override
@@ -165,10 +168,13 @@ public class TestCaseOfCdcSource {
         }
 
 
-        SiddhiTestHelper.waitForEvents(50, 50000, new AtomicInteger(1), 10000);
+        SiddhiTestHelper.waitForEvents(5000, 100000000, new AtomicInteger(1), 10000);
         siddhiAppRuntime.shutdown();
 
-
+// TODO: 10/4/18 have test cases for all insert, up, del and persistence also
+        //todo: use twi siddhi apps in automating
+        // TODO: 10/4/18 check for validations
+        // use fabric8
     }
 
     @Test

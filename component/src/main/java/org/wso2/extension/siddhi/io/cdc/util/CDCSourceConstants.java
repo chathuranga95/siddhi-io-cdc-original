@@ -27,7 +27,7 @@ public class CDCSourceConstants {
     public static final String PASSWORD = "password";
     public static final String DATABASE_CONNECTION_URL = "url";
     public static final String OPERATION = "operation";
-    public static final String DATABASE_HISTORY_FILE_DIRECTORY = "database.history.file.directory";
+    public static final String DATABASE_HISTORY_FILEBASE_HISTORY = "io.debezium.relational.history.FileDatabaseHistory";
     public static final String DATABASE_HISTORY_FILE_NAME = "database.history.file.filename";
     public static final String DATABASE_SERVER_NAME = "database.server.name";
     public static final String DATABASE_SERVER_ID = "database.server.id";
@@ -48,4 +48,6 @@ public class CDCSourceConstants {
     public static final String CDC_SOURCE_OBJECT = "cdc.source.object";
     public static final String DATABASE_HISTORY = "database.history";
     public static final String OFFSET_COMMIT_POLICY = "offset.commit.policy";
+    public static final String MYSQL_CONNECTOR_CLASS = "io.debezium.connector.mysql.MySqlConnector";
+
 }

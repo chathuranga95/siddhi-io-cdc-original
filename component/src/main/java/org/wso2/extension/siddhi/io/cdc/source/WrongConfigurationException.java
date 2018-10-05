@@ -18,22 +18,11 @@
 
 package org.wso2.extension.siddhi.io.cdc.source;
 
-import io.debezium.config.Configuration;
-import io.debezium.embedded.spi.OffsetCommitPolicy;
-
-import java.time.Duration;
-
 /**
- * Let the offsets to commit with the WSO2 SP's periodic snapshot.
- * Offsets are always committed, thus all offsets will be flushed with the periodic snapshot.
+ * This Exception is to be thrown if the user parameters to config the embedded engine are wrong.
  */
-public class PeriodicSnapshotCommitOffsetPolicy implements OffsetCommitPolicy {
-
-    public PeriodicSnapshotCommitOffsetPolicy(Configuration config) {
-    }
-
-    @Override
-    public boolean performCommit(long l, Duration duration) {
-        return true;
+class WrongConfigurationException extends Exception {
+    WrongConfigurationException(String message) {
+        super(message);
     }
 }

@@ -28,6 +28,8 @@
     <artifactId>siddhi-io-cdc</artifactId>
     <packaging>bundle</packaging>
     <name>Siddhi io cdc extension</name>
+    <!--check the name-->
+    <!--refer from parent pom-->
     <dependencies>
         <dependency>
             <groupId>org.apache.log4j.wso2</groupId>
@@ -67,17 +69,18 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.wso2.extension.siddhi.map.xml</groupId>
-            <artifactId>siddhi-map-xml</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.wso2.extension.siddhi.map.json</groupId>
-            <artifactId>siddhi-map-json</artifactId>
-            <scope>test</scope>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.wso2.extension.siddhi.map.xml</groupId>-->
+            <!--<artifactId>siddhi-map-xml</artifactId>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.wso2.extension.siddhi.map.json</groupId>-->
+            <!--<artifactId>siddhi-map-json</artifactId>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.wso2.extension.siddhi.map.keyvalue</groupId>
             <artifactId>siddhi-map-keyvalue</artifactId>
@@ -155,6 +158,7 @@
                             com.github.shyiko*,
                             io.debezium*,
                             org.apache.kafka*
+                            <!--try to remove , try not to pack, try to get to work with kafka.jar-->
                         </Private-Package>
                         <Import-Package>
                             *;resolution:=optional

@@ -18,37 +18,44 @@
 
 package org.wso2.extension.siddhi.io.cdc.source;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
+import java.util.Map;
 
 /**
- * This class Contains methods to store and retrieve the CdcSource objects.
+ * This class Contains methods to store and retrieve the CDCSource objects.
  */
 class CDCSourceObjectKeeper {
-    private static final Logger LOG = LoggerFactory.getLogger(CDCSourceObjectKeeper.class);
-    private static HashMap<String, CdcSource> objectMap = new HashMap<>();
+
+    private static CDCSourceObjectKeeper cdcSourceObjectKeeper = new CDCSourceObjectKeeper();
+    private Map<Integer, CDCSource> objectMap;
+
+    private CDCSourceObjectKeeper() {
+        objectMap = new HashMap<>();
+    }
 
     /**
      * @param cdcSource is added to the objectMap against it's toString() value.
      */
-    static void addCdcObject(CdcSource cdcSource) {
-        objectMap.put(cdcSource.toString(), cdcSource);
+    void addCdcObject(CDCSource cdcSource) {
+        objectMap.put(cdcSource.hashCode(), cdcSource);
     }
 
     /**
-     * @param cdcSource is the CDCSource object to be removed from the objectMap.
+     * @param cdcSourceHashCode is the CDCSource's hashcode to be removed from the objectMap.
      */
-    static void removeObject(CdcSource cdcSource) {
-        objectMap.remove(cdcSource.toString());
+    void removeObject(int cdcSourceHashCode) {
+        objectMap.remove(cdcSourceHashCode);
     }
 
     /**
-     * @param id cdcSource object's toString() value.
+     * @param hashCode cdcSource object's hashcode.
      * @return cdcObject if the particular object is already added. Otherwise, return null.
      */
-    static CdcSource getCdcObject(String id) {
-        return objectMap.get(id);
+    CDCSource getCdcObject(int hashCode) {
+        return objectMap.get(hashCode);
+    }
+
+    static CDCSourceObjectKeeper getCdcSourceObjectKeeper() {
+        return cdcSourceObjectKeeper;
     }
 }

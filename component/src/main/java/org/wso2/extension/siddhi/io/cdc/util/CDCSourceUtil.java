@@ -3,7 +3,7 @@ package org.wso2.extension.siddhi.io.cdc.util;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
-import org.wso2.extension.siddhi.io.cdc.source.CdcSource;
+import org.wso2.extension.siddhi.io.cdc.source.CDCSource;
 
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+// TODO: 10/4/18 add liscence
 /**
  * This class contains Util methods for the cdc extension.
  */
@@ -36,7 +36,9 @@ public class CDCSourceUtil {
         String database;
 
         String[] splittedURL = url.split(":");
+        // TODO: 10/4/18 ignoreequals
         if (!splittedURL[0].equals("jdbc")) {
+            // TODO: 10/4/18 add the invalid url into the exception
             throw new IllegalArgumentException("Invalid JDBC url.");
         } else {
             switch (splittedURL[1]) {
@@ -76,24 +78,30 @@ public class CDCSourceUtil {
      * @param connectRecord is the change data object which is received from debezium embedded engine.
      * @param operation     is the change data event which is specified by the user.
      **/
-    public static HashMap<String, Object> createMap(ConnectRecord connectRecord, String operation) {
-
-        HashMap<String, Object> detailsMap = new HashMap<>();
+    // TODO: 10/4/18 return type, Map
+    public static Map<String, Object> createMap(ConnectRecord connectRecord, String operation) {
+//todo: type of Map
+        Map<String, Object> detailsMap = new HashMap<>();
         Struct record = (Struct) connectRecord.value();
         Struct rawDetails;
         List<String> fieldNames = new ArrayList<>();
 
         //get the change data object's operation.
         String op;
+        //todo: serch this get()
+        // TODO: 10/5/18 talk to Tishan ayiya
+//        op = (String) record.get("op");
         try {
             op = (String) record.get("op");
         } catch (Exception ex) {
             return detailsMap;
         }
-
+// TODO: 10/4/18 equals ignore case, use constants
         //match the change data's operation with user specifying operation and proceed.
         if (operation.equals("insert") && op.equals("c") || operation.equals("delete") && op.equals("d")
                 || operation.equals("update") && op.equals("u")) {
+
+            // TODO: 10/4/18 try to merge the switches
 
             //get the field names of the table
             switch (op) {
@@ -139,12 +147,14 @@ public class CDCSourceUtil {
     }
 
     /**
-     * Get the WSO2 Stream Processor's local path.
+     * Get the WSO2 Stream Processor's local path from System Variables.
+     * if carbon.home is not set, return the current project path. (for test cases only)
      */
     public static String getStreamProcessorPath() {
         String path = System.getProperty("carbon.home");
+        // TODO: 10/4/18 move this code into test utils
         if (path == null) {
-            path = CdcSource.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+            path = CDCSource.class.getProtectionDomain().getCodeSource().getLocation().getPath();
             String decodedPath;
             try {
                 decodedPath = URLDecoder.decode(path, "UTF-8");

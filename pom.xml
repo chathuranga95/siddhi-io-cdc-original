@@ -50,11 +50,11 @@
                 <artifactId>siddhi-annotations</artifactId>
                 <version>${siddhi.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.log4j.wso2</groupId>
-                <artifactId>log4j</artifactId>
-                <version>${log4j.version}</version>
-            </dependency>
+            <!--<dependency>-->
+                <!--<groupId>org.apache.log4j.wso2</groupId>-->
+                <!--<artifactId>log4j</artifactId>-->
+                <!--<version>${log4j.version}</version>-->
+            <!--</dependency>-->
             <dependency>
                 <groupId>org.wso2.siddhi</groupId>
                 <artifactId>siddhi-query-compiler</artifactId>
@@ -83,22 +83,22 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>org.wso2.extension.siddhi.map.xml</groupId>
-                <artifactId>siddhi-map-xml</artifactId>
-                <version>${siddhi.map.xml.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.wso2.extension.siddhi.map.json</groupId>
-                <artifactId>siddhi-map-json</artifactId>
-                <version>${siddhi.map.json.version}</version>
-                <scope>test</scope>
-            </dependency>
+            <!--<dependency>-->
+                <!--<groupId>org.wso2.extension.siddhi.map.xml</groupId>-->
+                <!--<artifactId>siddhi-map-xml</artifactId>-->
+                <!--<version>${siddhi.map.xml.version}</version>-->
+                <!--<scope>test</scope>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.wso2.extension.siddhi.map.json</groupId>-->
+                <!--<artifactId>siddhi-map-json</artifactId>-->
+                <!--<version>${siddhi.map.json.version}</version>-->
+                <!--<scope>test</scope>-->
+            <!--</dependency>-->
             <dependency>
                 <groupId>org.testng</groupId>
                 <artifactId>testng</artifactId>
-                <version>6.11</version>
+                <version>6.11</version> <!--move to versions-->
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -136,8 +136,8 @@
         <siddhi.version>4.2.7</siddhi.version>
         <log4j.version>1.2.17.wso2v1</log4j.version>
         <carbon.transport.version>4.4.15</carbon.transport.version>
-        <siddhi.map.json.version>4.0.15</siddhi.map.json.version>
-        <siddhi.map.xml.version>4.0.11</siddhi.map.xml.version>
+        <!--<siddhi.map.json.version>4.0.15</siddhi.map.json.version>-->
+        <!--<siddhi.map.xml.version>4.0.11</siddhi.map.xml.version>-->
         <siddhi-map-keyvalue.version>1.0.13</siddhi-map-keyvalue.version>
         <jacoco.plugin.version>0.7.9</jacoco.plugin.version>
         <carbon.feature.plugin.version>3.0.0</carbon.feature.plugin.version>

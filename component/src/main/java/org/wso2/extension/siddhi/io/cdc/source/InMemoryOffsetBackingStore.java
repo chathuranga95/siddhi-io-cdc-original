@@ -33,32 +33,31 @@ import java.util.Map;
  * This class saves and loads the change data offsets in in-memory.
  */
 public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
-    private static final Logger LOG = LoggerFactory.getLogger(InMemoryOffsetBackingStore.class);
-    private volatile CdcSource cdcSource = null;
-    private HashMap<byte[], byte[]> cache = new HashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(InMemoryOffsetBackingStore.class);
+    private volatile CDCSource cdcSource = null;
+    private Map<byte[], byte[]> cache = new HashMap<>();
 
     public InMemoryOffsetBackingStore() {
     }
 
+    /**
+     * Configure this InMemoryOffsetBackingStore.
+     * initialize cdcSource with pre set config.
+     */
     public void configure(WorkerConfig config) {
         super.configure(config);
-        String cdcSourceObjectId = (String) config.originals().get(CDCSourceConstants.CDC_SOURCE_OBJECT);
-        cdcSource = CDCSourceObjectKeeper.getCdcObject(cdcSourceObjectId);
+        int cdcSourceObjectId = Integer.parseInt((String) config.originals().get(CDCSourceConstants.CDC_SOURCE_OBJECT));
+        cdcSource = CDCSourceObjectKeeper.getCdcSourceObjectKeeper().getCdcObject(cdcSourceObjectId);
     }
 
     public synchronized void start() {
+        // TODO: 10/4/18 use locks to synchronize
         super.start();
-        LOG.info("Started InMemoryOffsetBackingStore");
-        this.load();
-    }
+        log.debug("Started InMemoryOffsetBackingStore");
 
-    public synchronized void stop() {
-        super.stop();
-        LOG.info("Stopped InMemoryOffsetBackingStore");
-    }
-
-    private synchronized void load() {
-        cache = cdcSource.getCache();
+        //Load offsets from Snapshot.
+//        this.data = cdcSource.getOffsetData();
+        cache = cdcSource.getOffsetData();
 
         try {
             this.data = new HashMap<>();
@@ -70,11 +69,22 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
                 this.data.put(key, value);
             }
         } catch (Exception ex) {
-            LOG.error("error loading the in-memory offsets.", ex);
+            log.error("error loading the in-memory offsets.", ex);
         }
+
     }
 
+    public void stop() {
+        super.stop();
+        log.debug("Stopped InMemoryOffsetBackingStore");
+    }
+
+    /**
+     * Send offsets to cdcSource to save in next Snapshot.
+     */
+    @Override
     protected synchronized void save() {
+//        cdcSource.setOffsetData(this.data);
         try {
 
             for (Object o : this.data.entrySet()) {
@@ -89,40 +99,4 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
             throw new ConnectException(var7);
         }
     }
-//
-//    /**
-//     * Used to collect the serializable state of the processing element, that need to be
-//     * persisted for the reconstructing the element to the same state on a different point of time
-//     *
-//     * @return stateful objects of the processing element as an array
-//     */
-//    @Override
-//    public synchronized Map<String, Object> currentState() {
-//        Map<String, Object> currentState = new HashMap<>();
-//        currentState.put("cacheObj", cache);
-//        LOG.debug("current state called... " + cache.size());
-//
-//        return currentState;
-//    }
-//
-//    /**
-//     * Used to restore serialized state of the processing element, for reconstructing
-//     * the element to the same state as if was on a previous point of time.
-//     *
-//     * @param state the stateful objects of the element as an array on
-//     *              the same order provided by currentState().
-//     */
-//    @Override
-//    public synchronized void restoreState(Map<String, Object> state) {
-//        Object cacheObj = state.get("cacheObj");
-//        if (cacheObj instanceof HashMap) {
-//            this.cache = (HashMap<byte[], byte[]>) cacheObj;
-//        }
-//        LOG.debug("restore state called... " + cache.size());
-//    }
-//
-//    @Override
-//    public String getElementId() {
-//        return null;
-//    }
 }
