@@ -22,11 +22,16 @@ import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
 import org.wso2.extension.siddhi.io.cdc.source.CDCSource;
+import org.wso2.extension.siddhi.io.cdc.source.InMemoryOffsetBackingStore;
+import org.wso2.extension.siddhi.io.cdc.source.MyCommitPolicy;
+import org.wso2.extension.siddhi.io.cdc.source.WrongConfigurationException;
+import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,33 +39,28 @@ import java.util.regex.Pattern;
  * This class contains Util methods for the cdc extension.
  */
 public class CDCSourceUtil {
+    public static Map<String, Object> getConfigMap(String username, String password, String url, String tableName,
+                                                   String historyFileDirectory, String siddhiAppName,
+                                                   String siddhiStreamName, int serverID, String serverName,
+                                                   String connectorProperties, int cdcSourceHashCode)
+            throws WrongConfigurationException {
 
-    /**
-     * Extract the details from the connection url and return as a HashMap.
-     * mysql===> jdbc:mysql://hostname:port/testdb
-     * Hash map will include a subset of following elements according to the schema:
-     * schema
-     * host
-     * port
-     * database name
-     *
-     * @param url is the connection url given in the siddhi app
-     */
-    public static Map<String, String> extractDetails(String url) {
-        Map<String, String> details = new HashMap<>();
+        Map<String, Object> configMap = new HashMap<>();
+
         String host;
         int port;
         String database;
 
+        //Add schema specific details to configMap
+
         String[] splittedURL = url.split(":");
         if (!splittedURL[0].equalsIgnoreCase("jdbc")) {
-            throw new IllegalArgumentException("Invalid JDBC url: " + url);
+            throw new WrongConfigurationException("Invalid JDBC url: " + url);
         } else {
             switch (splittedURL[1]) {
                 case "mysql": {
 
-                    details.put("schema", "mysql");
-
+                    //Extract url details
                     String regex = "jdbc:mysql://(\\w*|[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}):" +
                             "(\\d++)/(\\w*)";
                     Pattern p = Pattern.compile(regex);
@@ -71,20 +71,88 @@ public class CDCSourceUtil {
                         database = matcher.group(3);
 
                     } else {
-                        throw new IllegalArgumentException("Invalid JDBC url.");
+                        throw new WrongConfigurationException("Invalid JDBC url: " + url);
                     }
 
-                    details.put("database", database);
+                    //Add extracted url details to configMap.
+                    configMap.put(CDCSourceConstants.DATABASE_PORT, port);
+                    configMap.put(CDCSourceConstants.TABLE_WHITELIST, database + "." + tableName);
+                    configMap.put(CDCSourceConstants.DATABASE_HOSTNAME, host);
+
+                    //Add other MySQL specific details to configMap.
+                    configMap.put(CDCSourceConstants.CONNECTOR_CLASS, CDCSourceConstants.MYSQL_CONNECTOR_CLASS);
+
 
                     break;
                 }
-                default:
-                    throw new IllegalArgumentException("Unsupported JDBC url.");
+                default: {
+                    throw new WrongConfigurationException("Unsupported schema. Expected schema: mysql, Found: "
+                            + splittedURL[1]);
+                }
+
             }
-            details.put("host", host);
-            details.put("port", Integer.toString(port));
+
+            //Add general config details to configMap
+            configMap.put(CDCSourceConstants.DATABASE_USER, username);
+            configMap.put(CDCSourceConstants.DATABASE_PASSWORD, password);
+
+            if (serverID == -1) {
+                Random random = new Random();
+                configMap.put(CDCSourceConstants.SERVER_ID, random.nextInt(1001) + 5400);
+            } else {
+                configMap.put(CDCSourceConstants.SERVER_ID, serverID);
+            }
+
+            //set the database server name if specified, otherwise set <host>_<port> as default
+            if (serverName.equals("")) {
+                configMap.put(CDCSourceConstants.DATABASE_SERVER_NAME, host + "_" + port);
+            } else {
+                configMap.put(CDCSourceConstants.DATABASE_SERVER_NAME, serverName);
+            }
+
+            configMap.put(CDCSourceConstants.OFFSET_STORAGE, InMemoryOffsetBackingStore.class.getName());
+            configMap.put(CDCSourceConstants.CDC_SOURCE_OBJECT, cdcSourceHashCode);
+
+            //set history file path.
+            configMap.put(CDCSourceConstants.DATABASE_HISTORY,
+                    CDCSourceConstants.DATABASE_HISTORY_FILEBASE_HISTORY);
+            configMap.put(CDCSourceConstants.DATABASE_HISTORY_FILE_NAME,
+                    historyFileDirectory + siddhiStreamName + ".dat");
+
+            //set the offset.commit.policy to PeriodicSnapshotCommitOffsetPolicy.
+            configMap.put(CDCSourceConstants.OFFSET_COMMIT_POLICY,
+                    MyCommitPolicy.class.getName());
+
+            //set connector property: name
+            configMap.put("name", siddhiAppName + siddhiStreamName);
+
+            //set additional connector properties using comma separated key value pair string
+            for (Map.Entry<String, String> entry : getConnectorPropertiesMap(connectorProperties).entrySet()) {
+                configMap.put(entry.getKey(), entry.getValue());
+            }
+
+            return configMap;
         }
-        return details;
+    }
+
+    private static Map<String, String> getConnectorPropertiesMap(String connectorProperties) {
+
+        Map<String, String> connectorPropertiesMap = new HashMap<>();
+
+        if (!connectorProperties.isEmpty()) {
+            String[] keyValuePairs = connectorProperties.split(",");
+            for (String keyValuePair : keyValuePairs) {
+                String[] keyAndValue = keyValuePair.split("=");
+                try {
+                    connectorPropertiesMap.put(keyAndValue[0].trim(), keyAndValue[1].trim());
+                } catch (ArrayIndexOutOfBoundsException ex) {
+                    throw new SiddhiAppValidationException("connector.properties input is invalid. Check near :" +
+                            keyValuePair);
+                }
+            }
+        }
+
+        return connectorPropertiesMap;
     }
 
     /**

@@ -205,15 +205,24 @@ public class CDCSource extends Source {
         //send this object reference and preferred operation to changeDataCapture object
         changeDataCapture = new ChangeDataCapture(operation, this.hashCode());
 
-        //TODO: 10/4/18 add config details of different schemas into a map and then pass it into the set config
+        //create the folders for history file if not exists
+        File directory = new File(historyFileDirectory);
+        if (!directory.exists()) {
+            boolean isDirectoryCreated = directory.mkdirs();
+            if (isDirectoryCreated && log.isDebugEnabled()) {
+                log.debug("Directory created for history file.");
+            }
+        }
 
         try {
-            changeDataCapture.setConfig(username, password, url, tableName, historyFileDirectory,
-                    siddhiAppName, streamName, serverID, serverName, connectorPropertiesMap);
+            Map<String, Object> configMap = CDCSourceUtil.getConfigMap(username, password, url, tableName,
+                    historyFileDirectory, siddhiAppName, streamName, serverID, serverName, connectorProperties,
+                    this.hashCode());
+            changeDataCapture.setConfig(configMap);
             changeDataCapture.setSourceEventListener(sourceEventListener);
         } catch (WrongConfigurationException ex) {
             throw new SiddhiAppCreationException("The cdc source couldn't get started. Invalid" +
-                    " configuration parameters.");
+                    " configuration parameters.", ex);
         }
     }
 

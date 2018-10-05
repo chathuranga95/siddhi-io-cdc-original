@@ -21,8 +21,8 @@ package org.wso2.extension.siddhi.io.cdc.source;
 /**
  * This Exception is to be thrown if the user parameters to config the embedded engine are wrong.
  */
-class WrongConfigurationException extends Exception {
-    WrongConfigurationException(String message) {
+public class WrongConfigurationException extends Exception {
+    public WrongConfigurationException(String message) {
         super(message);
     }
 }
