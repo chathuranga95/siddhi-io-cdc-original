@@ -24,7 +24,6 @@ import org.apache.kafka.connect.data.Struct;
 import org.wso2.extension.siddhi.io.cdc.source.CDCSource;
 
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,9 +96,10 @@ public class CDCSourceUtil {
 
     public static Map<String, Object> createMap(ConnectRecord connectRecord, String operation) {
 
+        //Map to return
         Map<String, Object> detailsMap = new HashMap<>();
+
         Struct record = (Struct) connectRecord.value();
-        Struct rawDetails;
 
         //get the change data object's operation.
         String op;
@@ -116,22 +116,26 @@ public class CDCSourceUtil {
                 || operation.equalsIgnoreCase(CDCSourceConstants.DELETE) && op.equals("d")
                 || operation.equalsIgnoreCase(CDCSourceConstants.UPDATE) && op.equals("u")) {
 
+            Struct rawDetails;
             List<Field> fields;
+            String fieldName;
 
             switch (op) {
                 case "c":
+                    //append row details after insert.
                     rawDetails = (Struct) record.get("after");
                     fields = rawDetails.schema().fields();
                     for (Field key : fields) {
-                        String fieldName = key.name();
+                        fieldName = key.name();
                         detailsMap.put(fieldName, rawDetails.get(fieldName));
                     }
                     break;
                 case "d":
+                    //append row details before delete.
                     rawDetails = (Struct) record.get("before");
                     fields = rawDetails.schema().fields();
                     for (Field key : fields) {
-                        String fieldName = key.name();
+                        fieldName = key.name();
                         detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + fieldName, rawDetails.get(fieldName));
                     }
                     break;
@@ -140,14 +144,14 @@ public class CDCSourceUtil {
                     rawDetails = (Struct) record.get("before");
                     fields = rawDetails.schema().fields();
                     for (Field key : fields) {
-                        String fieldName = key.name();
+                        fieldName = key.name();
                         detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + fieldName, rawDetails.get(fieldName));
                     }
                     //append row details after update.
                     rawDetails = (Struct) record.get("after");
                     fields = rawDetails.schema().fields();
                     for (Field key : fields) {
-                        String fieldName = key.name();
+                        fieldName = key.name();
                         detailsMap.put(fieldName, rawDetails.get(fieldName));
                     }
                     break;
