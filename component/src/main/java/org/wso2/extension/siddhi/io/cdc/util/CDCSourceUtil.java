@@ -100,13 +100,11 @@ public class CDCSourceUtil {
         Map<String, Object> detailsMap = new HashMap<>();
         Struct record = (Struct) connectRecord.value();
         Struct rawDetails;
-        List<String> fieldNames = new ArrayList<>();
 
         //get the change data object's operation.
         String op;
-        //todo: search this get()
-        // TODO: 10/5/18 talk to Tishan ayiya
-//        op = (String) record.get("op");
+
+        // TODO: 10/5/18 search this record.get("op") and talk to Tishan ayiya
         try {
             op = (String) record.get("op");
         } catch (Exception ex) {
@@ -118,43 +116,39 @@ public class CDCSourceUtil {
                 || operation.equalsIgnoreCase(CDCSourceConstants.DELETE) && op.equals("d")
                 || operation.equalsIgnoreCase(CDCSourceConstants.UPDATE) && op.equals("u")) {
 
-            // TODO: 10/4/18 try to merge the switches
+            List<Field> fields;
 
-            //get the field names of the table
             switch (op) {
                 case "c":
-                case "u":
                     rawDetails = (Struct) record.get("after");
+                    fields = rawDetails.schema().fields();
+                    for (Field key : fields) {
+                        String fieldName = key.name();
+                        detailsMap.put(fieldName, rawDetails.get(fieldName));
+                    }
                     break;
                 case "d":
                     rawDetails = (Struct) record.get("before");
-                    break;
-                default:
-                    return detailsMap;
-            }
-            List<Field> fields = rawDetails.schema().fields();
-            for (Field key : fields) {
-                fieldNames.add(key.name());
-            }
-
-            switch (operation) {
-                case CDCSourceConstants.INSERT:
-                    for (String field : fieldNames) {
-                        detailsMap.put(field, rawDetails.get(field));
+                    fields = rawDetails.schema().fields();
+                    for (Field key : fields) {
+                        String fieldName = key.name();
+                        detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + fieldName, rawDetails.get(fieldName));
                     }
                     break;
-                case CDCSourceConstants.DELETE:
-                    for (String field : fieldNames) {
-                        detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + field, rawDetails.get(field));
-                    }
-                    break;
-                case CDCSourceConstants.UPDATE:
-                    for (String field : fieldNames) {
-                        detailsMap.put(field, rawDetails.get(field));
-                    }
+                case "u":
+                    //append row details before update.
                     rawDetails = (Struct) record.get("before");
-                    for (String field : fieldNames) {
-                        detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + field, rawDetails.get(field));
+                    fields = rawDetails.schema().fields();
+                    for (Field key : fields) {
+                        String fieldName = key.name();
+                        detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + fieldName, rawDetails.get(fieldName));
+                    }
+                    //append row details after update.
+                    rawDetails = (Struct) record.get("after");
+                    fields = rawDetails.schema().fields();
+                    for (Field key : fields) {
+                        String fieldName = key.name();
+                        detailsMap.put(fieldName, rawDetails.get(fieldName));
                     }
                     break;
             }

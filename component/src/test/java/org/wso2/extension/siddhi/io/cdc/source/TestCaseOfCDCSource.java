@@ -205,8 +205,7 @@ public class TestCaseOfCDCSource {
                 "@app:name('cdcTesting')" +
                 "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
                 " password = '1234', table.name = 'login', " +
-                " offsets.commit.policy = 'AlwaysCommitOffsetPolicy'," +
-                " operation = 'delete', database.server.id = '1300'," +
+                " operation = 'delete'," +
                 " @map(type='keyvalue'))" +
                 "define stream istm (before_id string, before_name string);";
         String query = ("@info(name = 'query1') " +
@@ -228,7 +227,7 @@ public class TestCaseOfCDCSource {
         });
 
         siddhiAppRuntime.start();
-        SiddhiTestHelper.waitForEvents(50, 1, new AtomicInteger(50), 10000);
+        SiddhiTestHelper.waitForEvents(500, 10000000, new AtomicInteger(50), 10000);
 
         siddhiAppRuntime.shutdown();
     }
@@ -281,8 +280,7 @@ public class TestCaseOfCDCSource {
                 "@app:name('cdcTesting')" +
                 "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
                 " password = '1234', table.name = 'login', " +
-                " offsets.commit.policy = 'AlwaysCommitOffsetPolicy'," +
-                " operation = 'update', database.server.id = '1300'," +
+                " operation = 'update'," +
                 " @map(type='keyvalue'))" +
                 "define stream istm (id string, name string, before_id string, before_name string);";
         String query = ("@info(name = 'query1') " +
@@ -304,7 +302,7 @@ public class TestCaseOfCDCSource {
         });
 
         siddhiAppRuntime.start();
-        SiddhiTestHelper.waitForEvents(50, 1, new AtomicInteger(50), 10000);
+        SiddhiTestHelper.waitForEvents(500, 1000000, new AtomicInteger(50), 10000);
 
         siddhiAppRuntime.shutdown();
     }
