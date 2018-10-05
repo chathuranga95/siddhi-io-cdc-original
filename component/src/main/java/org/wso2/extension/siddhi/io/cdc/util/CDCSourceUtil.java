@@ -54,10 +54,8 @@ public class CDCSourceUtil {
         String database;
 
         String[] splittedURL = url.split(":");
-        // TODO: 10/4/18 ignoreequals
-        if (!splittedURL[0].equals("jdbc")) {
-            // TODO: 10/4/18 add the invalid url into the exception
-            throw new IllegalArgumentException("Invalid JDBC url.");
+        if (!splittedURL[0].equalsIgnoreCase("jdbc")) {
+            throw new IllegalArgumentException("Invalid JDBC url: " + url);
         } else {
             switch (splittedURL[1]) {
                 case "mysql": {
@@ -96,9 +94,9 @@ public class CDCSourceUtil {
      * @param connectRecord is the change data object which is received from debezium embedded engine.
      * @param operation     is the change data event which is specified by the user.
      **/
-    // TODO: 10/4/18 return type, Map
+
     public static Map<String, Object> createMap(ConnectRecord connectRecord, String operation) {
-//todo: type of Map
+
         Map<String, Object> detailsMap = new HashMap<>();
         Struct record = (Struct) connectRecord.value();
         Struct rawDetails;
@@ -106,7 +104,7 @@ public class CDCSourceUtil {
 
         //get the change data object's operation.
         String op;
-        //todo: serch this get()
+        //todo: search this get()
         // TODO: 10/5/18 talk to Tishan ayiya
 //        op = (String) record.get("op");
         try {
@@ -114,10 +112,11 @@ public class CDCSourceUtil {
         } catch (Exception ex) {
             return detailsMap;
         }
-// TODO: 10/4/18 equals ignore case, use constants
+
         //match the change data's operation with user specifying operation and proceed.
-        if (operation.equals("insert") && op.equals("c") || operation.equals("delete") && op.equals("d")
-                || operation.equals("update") && op.equals("u")) {
+        if (operation.equalsIgnoreCase(CDCSourceConstants.INSERT) && op.equals("c")
+                || operation.equalsIgnoreCase(CDCSourceConstants.DELETE) && op.equals("d")
+                || operation.equalsIgnoreCase(CDCSourceConstants.UPDATE) && op.equals("u")) {
 
             // TODO: 10/4/18 try to merge the switches
 
@@ -139,23 +138,23 @@ public class CDCSourceUtil {
             }
 
             switch (operation) {
-                case "insert":
+                case CDCSourceConstants.INSERT:
                     for (String field : fieldNames) {
                         detailsMap.put(field, rawDetails.get(field));
                     }
                     break;
-                case "delete":
+                case CDCSourceConstants.DELETE:
                     for (String field : fieldNames) {
-                        detailsMap.put("before_" + field, rawDetails.get(field));
+                        detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + field, rawDetails.get(field));
                     }
                     break;
-                case "update":
+                case CDCSourceConstants.UPDATE:
                     for (String field : fieldNames) {
                         detailsMap.put(field, rawDetails.get(field));
                     }
                     rawDetails = (Struct) record.get("before");
                     for (String field : fieldNames) {
-                        detailsMap.put("before_" + field, rawDetails.get(field));
+                        detailsMap.put(CDCSourceConstants.BEFORE_PREFIX + field, rawDetails.get(field));
                     }
                     break;
             }
