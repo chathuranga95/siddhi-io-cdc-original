@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * Extension to the siddhi to retrieve Database Changes - implementation of cdc source.
@@ -149,11 +148,9 @@ public class CDCSource extends Source {
     private static final Logger log = Logger.getLogger(CDCSource.class);
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Map<byte[], byte[]> offsetData = new HashMap<>();
-    private Map<String, String> connectorPropertiesMap = new HashMap<>();
     private String operation;
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
-    private String connectorProperties;
     private CDCSourceObjectKeeper cdcSourceObjectKeeper = CDCSourceObjectKeeper.getCdcSourceObjectKeeper();
 
 
@@ -193,7 +190,7 @@ public class CDCSource extends Source {
                 CDCSourceConstants.EMPTY_STRING);
 
         //initialize parameters from connector.properties
-        connectorProperties = optionHolder.validateAndGetStaticValue(CDCSourceConstants.CONNECTOR_PROPERTIES,
+        String connectorProperties = optionHolder.validateAndGetStaticValue(CDCSourceConstants.CONNECTOR_PROPERTIES,
                 CDCSourceConstants.EMPTY_STRING);
 
         //initialize history file directory
@@ -203,7 +200,7 @@ public class CDCSource extends Source {
         validateParameter();
 
         //send this object reference and preferred operation to changeDataCapture object
-        changeDataCapture = new ChangeDataCapture(operation, this.hashCode());
+        changeDataCapture = new ChangeDataCapture(operation);
 
         //create the folders for history file if not exists
         File directory = new File(historyFileDirectory);
@@ -247,9 +244,8 @@ public class CDCSource extends Source {
         //keep the object reference in Object keeper
         cdcSourceObjectKeeper.addCdcObject(this);
 
-        Future<?> submit = executorService.submit(changeDataCapture.getEngine());
-//        (new Thread(changeDataCapture.getEngine())).start();
-        log.debug("changeDataCapture Executive service submit cancel status :" + submit.isCancelled());
+        executorService.execute(changeDataCapture.getEngine());
+
     }
 
     /**
@@ -311,9 +307,7 @@ public class CDCSource extends Source {
     @Override
     public synchronized void restoreState(Map<String, Object> map) {
         Object cacheObj = map.get("cacheObj");
-//        if (cacheObj instanceof HashMap) {
         this.offsetData = (HashMap<byte[], byte[]>) cacheObj;
-//        }
     }
 
     synchronized Map<byte[], byte[]> getOffsetData() {
@@ -340,19 +334,6 @@ public class CDCSource extends Source {
                     " Please set the parameter.");
         } else if (!historyFileDirectory.endsWith(File.separator)) {
             historyFileDirectory = historyFileDirectory + File.separator;
-        }
-
-        if (!connectorProperties.isEmpty()) {
-            String[] keyValuePairs = connectorProperties.split(",");
-            for (String keyValuePair : keyValuePairs) {
-                String[] keyAndValue = keyValuePair.split("=");
-                try {
-                    connectorPropertiesMap.put(keyAndValue[0].trim(), keyAndValue[1].trim());
-                } catch (ArrayIndexOutOfBoundsException ex) {
-                    throw new SiddhiAppValidationException("connector.properties input is invalid. Check near :" +
-                            keyValuePair);
-                }
-            }
         }
     }
 }

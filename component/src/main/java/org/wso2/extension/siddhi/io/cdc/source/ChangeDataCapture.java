@@ -36,11 +36,9 @@ class ChangeDataCapture {
     private String operation;
     private Configuration config;
     private SourceEventListener sourceEventListener;
-    private int cdcSourceHashCode;
 
-    ChangeDataCapture(String operation, int cdcSourceHashCode) {
+    ChangeDataCapture(String operation) {
         this.operation = operation;
-        this.cdcSourceHashCode = cdcSourceHashCode;
     }
 
     /**

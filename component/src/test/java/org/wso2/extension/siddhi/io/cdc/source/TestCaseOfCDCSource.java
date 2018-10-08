@@ -21,7 +21,6 @@ package org.wso2.extension.siddhi.io.cdc.source;
 import org.apache.log4j.Logger;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
@@ -36,8 +35,6 @@ import org.wso2.siddhi.core.util.persistence.PersistenceStore;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.testng.AssertJUnit.assertEquals;
 
 public class TestCaseOfCDCSource {
 
