@@ -26,13 +26,16 @@ import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
 import org.wso2.siddhi.core.exception.CannotRestoreSiddhiAppStateException;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
+import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.util.EventPrinter;
 import org.wso2.siddhi.core.util.SiddhiTestHelper;
 import org.wso2.siddhi.core.util.config.InMemoryConfigManager;
 import org.wso2.siddhi.core.util.persistence.InMemoryPersistenceStore;
 import org.wso2.siddhi.core.util.persistence.PersistenceStore;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -175,8 +178,23 @@ public class TestCaseOfCDCSource {
         Thread.sleep(5000);
         siddhiAppRuntime.persist();
 
+        Source source = null;
+        Collection<List<Source>> collection = siddhiAppRuntime.getSources();
+        for (List list : collection) {
+            source = (Source) list.get(0);
+            break;
+
+        }
+        source.pause();
+        logger.info("persisted, paused...");
+        Thread.sleep(10000);
+        source.resume();
+        logger.info("resumed..., running");
+
+
         //restarting siddhi app
         Thread.sleep(5000);
+        logger.info("restarting...");
         siddhiAppRuntime.shutdown();
         // TODO: 10/4/18 don't create a new one? discuss.
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
@@ -198,11 +216,13 @@ public class TestCaseOfCDCSource {
             Assert.fail("Restoring of Siddhi app " + siddhiAppRuntime.getName() + " failed", e);
         }
 
+//        SiddhiTestHelper.waitForEvents(50, 100, new AtomicInteger(100), 1000000);
+        while (true) {
+            Thread.sleep(100);
+        }
+//        siddhiAppRuntime.shutdown();
 
-        SiddhiTestHelper.waitForEvents(5000, 100000000, new AtomicInteger(1), 10000);
-        siddhiAppRuntime.shutdown();
-
-// TODO: 10/4/18 have test cases for all insert, up, del and persistence also
+        //TODO: 10/4/18 have test cases for all insert, up, del and persistence also
         //todo: use twi siddhi apps in automating
         // TODO: 10/4/18 check for validations
         // use fabric8
@@ -214,7 +234,6 @@ public class TestCaseOfCDCSource {
     @Test
     public void cdcDeleteOperationMysql() throws InterruptedException {
         logger.info("------------------------------------------------------------------------------------------------");
-
         SiddhiManager siddhiManager = new SiddhiManager();
 
         String inStreamDefinition = "" +

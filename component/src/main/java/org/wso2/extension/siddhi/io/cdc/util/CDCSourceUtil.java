@@ -23,10 +23,11 @@ import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
 import org.wso2.extension.siddhi.io.cdc.source.CDCSource;
 import org.wso2.extension.siddhi.io.cdc.source.InMemoryOffsetBackingStore;
-import org.wso2.extension.siddhi.io.cdc.source.MyCommitPolicy;
+import org.wso2.extension.siddhi.io.cdc.source.PeriodicSnapshotCommitOffsetPolicy;
 import org.wso2.extension.siddhi.io.cdc.source.WrongConfigurationException;
 import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
+import java.io.File;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.List;
@@ -121,7 +122,7 @@ public class CDCSourceUtil {
 
             //set the offset.commit.policy to PeriodicSnapshotCommitOffsetPolicy.
             configMap.put(CDCSourceConstants.OFFSET_COMMIT_POLICY,
-                    MyCommitPolicy.class.getName());
+                    PeriodicSnapshotCommitOffsetPolicy.class.getName());
 
             //set connector property: name
             configMap.put("name", siddhiAppName + siddhiStreamName);
@@ -233,7 +234,7 @@ public class CDCSourceUtil {
      * Get the WSO2 Stream Processor's local path from System Variables.
      * if carbon.home is not set, return the current project path. (for test cases only)
      */
-    public static String getStreamProcessorPath() {
+    public static String getCarbonHome() {
         String path = System.getProperty("carbon.home");
         // TODO: 10/4/18 move this code into test utils
         if (path == null) {
@@ -249,7 +250,7 @@ public class CDCSourceUtil {
             int folderUpCharacterCount = 0;
             int counter = 0;
             while (folderUpCharacterCount < 2) {
-                if (Character.toString(decodedPath.charAt(x - counter)).equals("/")) {
+                if (Character.toString(decodedPath.charAt(x - counter)).equals(File.separator)) {
                     folderUpCharacterCount++;
                 }
                 counter++;

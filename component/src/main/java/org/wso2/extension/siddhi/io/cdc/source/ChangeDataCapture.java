@@ -26,6 +26,8 @@ import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class is for capturing change data using debezium embedded engine.
@@ -36,6 +38,12 @@ class ChangeDataCapture {
     private String operation;
     private Configuration config;
     private SourceEventListener sourceEventListener;
+    private EmbeddedEngine engine;
+    private ReentrantLock lock = new ReentrantLock();
+
+    // TODO: 10/4/18 let the user to set the connector class, discuss with Tishan ayiya
+    private Condition condition = lock.newCondition();
+    private boolean paused = false;
 
     ChangeDataCapture(String operation) {
         this.operation = operation;
@@ -47,8 +55,6 @@ class ChangeDataCapture {
     void setSourceEventListener(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
     }
-
-    // TODO: 10/4/18 let the user to set the connector class, discuss with Tishan ayiya
 
     /**
      * Initialize this.config according to user specified parameters.
@@ -70,7 +76,7 @@ class ChangeDataCapture {
      */
     EmbeddedEngine getEngine() {
         // Create an engine with above set configuration ...
-        EmbeddedEngine engine = EmbeddedEngine.create()
+        engine = EmbeddedEngine.create()
                 .using(config)
                 .notifying(this::handleEvent)
                 .build();
@@ -78,12 +84,39 @@ class ChangeDataCapture {
         return engine;
     }
 
+    void pause() {
+        paused = true;
+    }
+
+    void resume() {
+        paused = false;
+        try {
+            lock.lock();
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     /**
      * When an event is received, create and send the event details to the sourceEventListener.
      */
     private void handleEvent(ConnectRecord connectRecord) {
-        Map<String, Object> detailsMap = CDCSourceUtil.createMap(connectRecord, operation);
+        Map<String, Object> detailsMap;
 
+        if (paused) {
+            lock.lock();
+            try {
+                while (paused) {
+                    condition.await();
+                }
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            } finally {
+                lock.unlock();
+            }
+        }
+        detailsMap = CDCSourceUtil.createMap(connectRecord, operation);
         if (!detailsMap.isEmpty()) {
             sourceEventListener.onEvent(detailsMap, null);
         }

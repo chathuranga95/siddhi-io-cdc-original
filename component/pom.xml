@@ -27,8 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>siddhi-io-cdc</artifactId>
     <packaging>bundle</packaging>
-    <name>Siddhi io cdc extension</name>
-    <!--todo: check the name cdc io extension-->
+    <name>Siddhi IO CDC extension</name>
     <dependencies>
         <dependency>
             <groupId>org.apache.log4j.wso2</groupId>
@@ -140,7 +139,6 @@
                             com.github.shyiko*,
                             io.debezium*,
                             org.apache.kafka*
-                            <!--todo: try to remove , try not to pack, try to get to work with kafka.jar-->
                         </Private-Package>
                         <Import-Package>
                             *;resolution:=optional

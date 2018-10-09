@@ -24,16 +24,17 @@ import io.debezium.embedded.spi.OffsetCommitPolicy;
 import java.time.Duration;
 
 /**
- * gfgfgfg
+ * Let the offsets to commit with the WSO2 SP's periodic snapshot.
+ * Offsets are always committed, thus all offsets will be flushed with the periodic snapshot.
  */
-public class MyCommitPolicy implements OffsetCommitPolicy {
+public class PeriodicSnapshotCommitOffsetPolicy implements OffsetCommitPolicy {
 
-    public MyCommitPolicy(Configuration config) {
-
+    // TODO: 10/8/18 talk to Tishan ayiya, without below constructor, it is not working
+    public PeriodicSnapshotCommitOffsetPolicy(Configuration config) {
     }
 
     @Override
-    public boolean performCommit(long numberOfMessagesSinceLastCommit, Duration timeSinceLastCommit) {
+    public boolean performCommit(long l, Duration duration) {
         return true;
     }
 }

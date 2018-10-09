@@ -148,10 +148,12 @@ public class CDCSource extends Source {
     private static final Logger log = Logger.getLogger(CDCSource.class);
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Map<byte[], byte[]> offsetData = new HashMap<>();
+    //    private Map<ByteBuffer, ByteBuffer> offsetData = new HashMap<>();
     private String operation;
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
     private CDCSourceObjectKeeper cdcSourceObjectKeeper = CDCSourceObjectKeeper.getCdcSourceObjectKeeper();
+    private String carbonHome;
 
 
     /**
@@ -194,7 +196,8 @@ public class CDCSource extends Source {
                 CDCSourceConstants.EMPTY_STRING);
 
         //initialize history file directory
-        historyFileDirectory = CDCSourceUtil.getStreamProcessorPath() + "cdc" + File.separator + "history"
+        carbonHome = CDCSourceUtil.getCarbonHome();
+        historyFileDirectory = carbonHome + File.separator + "cdc" + File.separator + "history"
                 + File.separator + siddhiAppName + File.separator;
 
         validateParameter();
@@ -202,7 +205,7 @@ public class CDCSource extends Source {
         //send this object reference and preferred operation to changeDataCapture object
         changeDataCapture = new ChangeDataCapture(operation);
 
-        //create the folders for history file if not exists
+        //create the folder for history file if not exists
         File directory = new File(historyFileDirectory);
         if (!directory.exists()) {
             boolean isDirectoryCreated = directory.mkdirs();
@@ -240,7 +243,7 @@ public class CDCSource extends Source {
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
         // TODO: 10/4/18 if some error occurs, throw the exception
-        // TODO: 10/5/18 get the events to here and submit, don't send this object
+
         //keep the object reference in Object keeper
         cdcSourceObjectKeeper.addCdcObject(this);
 
@@ -272,7 +275,7 @@ public class CDCSource extends Source {
      */
     @Override
     public void pause() {
-// TODO: 10/4/18 use thread locking to implement
+        changeDataCapture.pause();
     }
 
     /**
@@ -280,7 +283,7 @@ public class CDCSource extends Source {
      */
     @Override
     public void resume() {
-
+        changeDataCapture.resume();
     }
 
     /**
@@ -290,10 +293,10 @@ public class CDCSource extends Source {
      * @return stateful objects of the processing element as a map
      */
     @Override
-    public synchronized Map<String, Object> currentState() {
+    public Map<String, Object> currentState() {
         Map<String, Object> currentState = new HashMap<>();
         currentState.put("cacheObj", offsetData);
-//
+
         return currentState;
     }
 
@@ -305,18 +308,26 @@ public class CDCSource extends Source {
      *            This map will have the  same keys that is created upon calling currentState() method.
      */
     @Override
-    public synchronized void restoreState(Map<String, Object> map) {
+    public void restoreState(Map<String, Object> map) {
         Object cacheObj = map.get("cacheObj");
         this.offsetData = (HashMap<byte[], byte[]>) cacheObj;
+//        this.offsetData = (HashMap<ByteBuffer, ByteBuffer>) cacheObj;
     }
 
-    synchronized Map<byte[], byte[]> getOffsetData() {
+    Map<byte[], byte[]> getOffsetData() {
         return offsetData;
     }
 
-    synchronized void setCache(Map<byte[], byte[]> offsetData) {
+//    Map<ByteBuffer, ByteBuffer> getOffsetData() {
+//        return offsetData;
+//    }
+
+    void setOffsetData(Map<byte[], byte[]> offsetData) {
         this.offsetData = offsetData;
     }
+//    void setOffsetData(Map<ByteBuffer, ByteBuffer> offsetData) {
+//        this.offsetData = offsetData;
+//    }
 
     /**
      * Used to Validate the parameters.
@@ -328,10 +339,8 @@ public class CDCSource extends Source {
             throw new SiddhiAppValidationException("operation should be one of 'insert', 'update' or 'delete'");
         }
 
-        // TODO: 10/4/18 all the exceptions should have context
-        if (historyFileDirectory.isEmpty()) {
-            throw new SiddhiAppValidationException("Couldn't set the database.history.file.directory automatically." +
-                    " Please set the parameter.");
+        if (carbonHome.isEmpty()) {
+            throw new SiddhiAppValidationException("Couldn't initialize Carbon Home.");
         } else if (!historyFileDirectory.endsWith(File.separator)) {
             historyFileDirectory = historyFileDirectory + File.separator;
         }

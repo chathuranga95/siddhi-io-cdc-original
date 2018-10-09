@@ -35,7 +35,7 @@ import java.util.Map;
 public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
     private static final Logger log = LoggerFactory.getLogger(InMemoryOffsetBackingStore.class);
     private volatile CDCSource cdcSource = null;
-    private Map<byte[], byte[]> cache = new HashMap<>();
+    private Map<byte[], byte[]> inMemoryOffsetCache = new HashMap<>();
 
     public InMemoryOffsetBackingStore() {
     }
@@ -50,22 +50,25 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
         cdcSource = CDCSourceObjectKeeper.getCdcSourceObjectKeeper().getCdcObject(cdcSourceObjectId);
     }
 
-    public synchronized void start() {
-        // TODO: 10/4/18 use locks to synchronize
+    public void start() {
         super.start();
         log.debug("Started InMemoryOffsetBackingStore");
 
         //Load offsets from Snapshot.
 //        this.data = cdcSource.getOffsetData();
-        cache = cdcSource.getOffsetData();
+        inMemoryOffsetCache = cdcSource.getOffsetData();
 
         try {
             this.data = new HashMap<>();
 
-            for (Object obj : cache.entrySet()) {
+            for (Object obj : inMemoryOffsetCache.entrySet()) {
                 Map.Entry<byte[], byte[]> mapEntry = (Map.Entry) obj;
-                ByteBuffer key = mapEntry.getKey() != null ? ByteBuffer.wrap(mapEntry.getKey()) : null;
-                ByteBuffer value = mapEntry.getValue() != null ? ByteBuffer.wrap(mapEntry.getValue()) : null;
+//                ByteBuffer key = (mapEntry.getKey() != null) ? ByteBuffer.wrap(mapEntry.getKey()) : null;
+//                ByteBuffer value = mapEntry.getValue() != null ? ByteBuffer.wrap(mapEntry.getValue()) : null;
+
+                ByteBuffer key = ByteBuffer.wrap(mapEntry.getKey());
+                ByteBuffer value = ByteBuffer.wrap(mapEntry.getValue());
+
                 this.data.put(key, value);
             }
         } catch (Exception ex) {
@@ -83,20 +86,24 @@ public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
      * Send offsets to cdcSource to save in next Snapshot.
      */
     @Override
-    protected synchronized void save() {
+    protected void save() {
 //        cdcSource.setOffsetData(this.data);
         try {
 
             for (Object o : this.data.entrySet()) {
                 Map.Entry mapEntry = (Map.Entry) o;
-                byte[] key = mapEntry.getKey() != null ? ((ByteBuffer) mapEntry.getKey()).array() : null;
-                byte[] value = mapEntry.getValue() != null ? ((ByteBuffer) mapEntry.getValue()).array() : null;
-                cache.put(key, value);
-            }
-            cdcSource.setCache(cache);
+//                byte[] key = mapEntry.getKey() != null ? ((ByteBuffer) mapEntry.getKey()).array() : null;
+//                byte[] value = mapEntry.getValue() != null ? ((ByteBuffer) mapEntry.getValue()).array() : null;
 
-        } catch (Exception var7) {
-            throw new ConnectException(var7);
+                byte[] key = ((ByteBuffer) mapEntry.getKey()).array();
+                byte[] value = ((ByteBuffer) mapEntry.getValue()).array();
+
+                inMemoryOffsetCache.put(key, value);
+            }
+            cdcSource.setOffsetData(inMemoryOffsetCache);
+
+        } catch (Exception ex) {
+            throw new ConnectException(ex);
         }
     }
 }
