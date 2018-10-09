@@ -155,7 +155,6 @@ public class CDCSource extends Source {
     private CDCSourceObjectKeeper cdcSourceObjectKeeper = CDCSourceObjectKeeper.getCdcSourceObjectKeeper();
     private String carbonHome;
 
-
     /**
      * The initialization method for {@link Source}, will be called before other methods. It used to validate
      * all configurations and to get initial values.
@@ -171,7 +170,6 @@ public class CDCSource extends Source {
     public void init(SourceEventListener sourceEventListener, OptionHolder optionHolder,
                      String[] requestedTransportPropertyNames, ConfigReader configReader,
                      SiddhiAppContext siddhiAppContext) {
-
         String siddhiAppName = siddhiAppContext.getName();
         String streamName = sourceEventListener.getStreamDefinition().getId();
 
@@ -296,7 +294,6 @@ public class CDCSource extends Source {
     public Map<String, Object> currentState() {
         Map<String, Object> currentState = new HashMap<>();
         currentState.put("cacheObj", offsetData);
-
         return currentState;
     }
 
@@ -311,10 +308,16 @@ public class CDCSource extends Source {
     public void restoreState(Map<String, Object> map) {
         Object cacheObj = map.get("cacheObj");
         this.offsetData = (HashMap<byte[], byte[]>) cacheObj;
-//        this.offsetData = (HashMap<ByteBuffer, ByteBuffer>) cacheObj;
+        // this.offsetData = (HashMap<ByteBuffer, ByteBuffer>) cacheObj;
+
     }
 
     Map<byte[], byte[]> getOffsetData() {
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return offsetData;
     }
 

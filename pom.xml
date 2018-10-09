@@ -16,8 +16,8 @@
 ~ specific language governing permissions and limitations
 ~ under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.wso2</groupId>
@@ -81,6 +81,14 @@
                 <artifactId>mysql-binlog-connector-java</artifactId>
                 <version>${mysql-binlog-connector-java.version}</version>
             </dependency>
+            <!-- https://mvnrepository.com/artifact/org.wso2.extension.siddhi.store.rdbms/siddhi-store-rdbms -->
+            <dependency>
+                <groupId>org.wso2.extension.siddhi.store.rdbms</groupId>
+                <artifactId>siddhi-store-rdbms</artifactId>
+                <version>${siddhi-store-rdbms.version}</version>
+                <scope>test</scope>
+            </dependency>
+
             <dependency>
                 <groupId>org.apache.log4j.wso2</groupId>
                 <artifactId>log4j</artifactId>
@@ -153,5 +161,6 @@
         <debezium-embedded.version>0.8.0.Final</debezium-embedded.version>
         <debezium-connector-oracle.version>0.8.0.CR1</debezium-connector-oracle.version>
         <org.testng.version>6.11</org.testng.version>
+        <siddhi-store-rdbms.version>4.0.39</siddhi-store-rdbms.version>
     </properties>
 </project>

@@ -20,12 +20,14 @@ package org.wso2.extension.siddhi.io.cdc.source;
 
 import org.apache.log4j.Logger;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.wso2.siddhi.core.SiddhiAppRuntime;
 import org.wso2.siddhi.core.SiddhiManager;
 import org.wso2.siddhi.core.event.Event;
 import org.wso2.siddhi.core.exception.CannotRestoreSiddhiAppStateException;
 import org.wso2.siddhi.core.query.output.callback.QueryCallback;
+import org.wso2.siddhi.core.stream.input.InputHandler;
 import org.wso2.siddhi.core.stream.input.source.Source;
 import org.wso2.siddhi.core.util.EventPrinter;
 import org.wso2.siddhi.core.util.SiddhiTestHelper;
@@ -38,11 +40,128 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestCaseOfCDCSource {
 
-    private static final Logger logger = Logger.getLogger(TestCaseOfCDCSource.class);
+    private static final Logger log = Logger.getLogger(TestCaseOfCDCSource.class);
+    private AtomicInteger eventCount = new AtomicInteger(0);
+    private AtomicBoolean eventArrived = new AtomicBoolean(false);
+    private int waitTime = 50;
+    private int timeout = 10000;
+    private String username = "root";
+    private String password = "1234";
+    private Object[] receivedevents;
+
+    @BeforeMethod
+    public void init() {
+        eventCount.set(0);
+        eventArrived.set(false);
+    }
+
+    /**
+     * Test case to Capture Insert operations from a MySQL table.
+     * Offset data persistence is enabled.
+     */
+    @Test
+    public void testInsertCDC() throws InterruptedException {
+        log.info("------------------------------------------------------------------------------------------------");
+        log.info("CDC TestCase-1: Capturing Insert change data from MySQL.");
+        log.info("------------------------------------------------------------------------------------------------");
+
+        PersistenceStore persistenceStore = new InMemoryPersistenceStore();
+
+        SiddhiManager siddhiManager = new SiddhiManager();
+        siddhiManager.setPersistenceStore(persistenceStore);
+
+        String cdcinStreamDefinition = "@app:name('cdcTesting')" +
+                "@source(type = 'cdc'," +
+                " url = 'jdbc:mysql://localhost:3306/SimpleDB'," +
+                " username = 'debezium'," +
+                " password = 'dbz'," +
+                " table.name = 'login', " +
+                " operation = 'insert', " +
+                " @map(type='keyvalue'))" +
+                "define stream istm (id string, name string);";
+
+        String cdcquery = ("@info(name = 'query1') " +
+                "from istm#log() " +
+                "select *  " +
+                "insert into outputStream;");
+
+
+        SiddhiAppRuntime cdcAppRuntime = siddhiManager.createSiddhiAppRuntime(cdcinStreamDefinition +
+                cdcquery);
+
+        siddhiManager.setConfigManager(new InMemoryConfigManager());
+
+        QueryCallback queryCallback = new QueryCallback() {
+            @Override
+            public void receive(long timestamp, Event[] inEvents, Event[] removeEvents) {
+                for (Event event : inEvents) {
+                    eventCount.getAndIncrement();
+                    log.info(eventCount + ". " + event);
+                    eventArrived.set(true);
+                }
+            }
+        };
+
+        cdcAppRuntime.addCallback("query1", queryCallback);
+        cdcAppRuntime.start();
+
+        SiddhiTestHelper.waitForEvents(waitTime, 11, eventCount, timeout);
+
+        //persisting
+        cdcAppRuntime.persist();
+
+        //restarting siddhi app
+        cdcAppRuntime.shutdown();
+        eventArrived.set(false);
+        eventCount.set(0);
+
+        cdcAppRuntime = siddhiManager.createSiddhiAppRuntime(cdcinStreamDefinition + cdcquery);
+        cdcAppRuntime.addCallback("query1", queryCallback);
+        cdcAppRuntime.start();
+
+        //loading
+        try {
+            cdcAppRuntime.restoreLastRevision();
+        } catch (CannotRestoreSiddhiAppStateException e) {
+            Assert.fail("Restoring of Siddhi app " + cdcAppRuntime.getName() + " failed");
+        }
+
+        log.info("Siddhi app restarted. Waiting for events...");
+
+        //starting RDBMS store.
+
+        String rdbmsStoreDefinition = "define stream insertionStream (id string, name string);" +
+                "@Store(type='rdbms', jdbc.url='jdbc:mysql://localhost:3306/SimpleDB'," +
+                " username='root', password='1234' , jdbc.driver.name='com.mysql.jdbc.Driver')" +
+                "define table login (id string, name string);";
+
+        String rdbmsQuery = "@info(name='query2') " +
+                "from insertionStream " +
+                "insert into login;";
+
+        QueryCallback queryCallback2 = new QueryCallback() {
+            @Override
+            public void receive(long timestamp, Event[] inEvents, Event[] removeEvents) {
+                for (Event event : inEvents) {
+                    log.info("insert done: " + event);
+                }
+            }
+        };
+        SiddhiAppRuntime rdbmsAppRuntime = siddhiManager.createSiddhiAppRuntime(rdbmsStoreDefinition + rdbmsQuery);
+        rdbmsAppRuntime.addCallback("query2", queryCallback2);
+        rdbmsAppRuntime.start();
+
+        //Do an insert and wait for cdc app to capture.
+        InputHandler rdbmsInputHandler = rdbmsAppRuntime.getInputHandler("insertionStream");
+        Object[] insertingObject = new Object[]{"e077", "testEmployer"};
+        rdbmsInputHandler.send(insertingObject);
+        SiddhiTestHelper.waitForEvents(waitTime, 1, eventCount, timeout);
+    }
 
     /**
      * Test case to extract details from URL with service name for Oracle
@@ -134,7 +253,7 @@ public class TestCaseOfCDCSource {
      */
     @Test
     public void cdcInsertOperationMysql() throws InterruptedException {
-        logger.info("persistence test - cdc");
+        log.info("persistence test - cdc");
 
         PersistenceStore persistenceStore = new InMemoryPersistenceStore();
 
@@ -167,7 +286,7 @@ public class TestCaseOfCDCSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
 //                EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    logger.info("received event: " + event);
+                    log.info("received event: " + event);
                 }
             }
         });
@@ -179,23 +298,19 @@ public class TestCaseOfCDCSource {
         Thread.sleep(5000);
         siddhiAppRuntime.persist();
 
-        Source source = null;
+        Source source;
         Collection<List<Source>> collection = siddhiAppRuntime.getSources();
-        for (List list : collection) {
-            source = (Source) list.get(0);
-            break;
-
-        }
+        source = collection.stream().findFirst().map(list -> (Source) list.get(0)).orElse(null);
         source.pause();
-        logger.info("persisted, paused...");
+        log.info("persisted, paused...");
         Thread.sleep(10000);
         source.resume();
-        logger.info("resumed..., running");
+        log.info("resumed..., running");
 
 
         //restarting siddhi app
         Thread.sleep(5000);
-        logger.info("restarting...");
+        log.info("restarting...");
         siddhiAppRuntime.shutdown();
         // TODO: 10/4/18 don't create a new one. discuss with Tishan ayiya
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
@@ -204,7 +319,7 @@ public class TestCaseOfCDCSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
 //                EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    logger.info("received event from query 1: " + event);
+                    log.info("received event from query 1: " + event);
                 }
             }
         });
@@ -234,7 +349,7 @@ public class TestCaseOfCDCSource {
      */
     @Test
     public void cdcOperationValidation() throws InterruptedException {
-        logger.info("------------------------------------------------------------------------------------------------");
+        log.info("------------------------------------------------------------------------------------------------");
         SiddhiManager siddhiManager = new SiddhiManager();
 
         String invalidOperation = "otherOperation";
@@ -261,7 +376,7 @@ public class TestCaseOfCDCSource {
                 @Override
                 public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                     for (Event event : inEvents) {
-                        logger.info("Received event: " + event);
+                        log.info("Received event: " + event);
                     }
                 }
             });
@@ -282,13 +397,13 @@ public class TestCaseOfCDCSource {
      */
     @Test
     public void cdcDeleteOperationMysql() throws InterruptedException {
-        logger.info("------------------------------------------------------------------------------------------------");
+        log.info("------------------------------------------------------------------------------------------------");
         SiddhiManager siddhiManager = new SiddhiManager();
 
         String inStreamDefinition = "" +
                 "@app:name('cdcTesting')" +
                 "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
-                " password = '1234', table.name = 'login', " +
+                " password = '1234', table.name = 'loghhhin', " +
                 " operation = 'delete'," +
                 " @map(type='keyvalue'))" +
                 "define stream istm (before_id string, before_name string);";
@@ -305,7 +420,7 @@ public class TestCaseOfCDCSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    logger.info("received event: " + event);
+                    log.info("received event: " + event);
                 }
             }
         });
@@ -321,7 +436,7 @@ public class TestCaseOfCDCSource {
      */
     @Test
     public void cdcInsertOperationMysql2() throws InterruptedException {
-        logger.info("------------------------------------------------------------------------------------------------");
+        log.info("------------------------------------------------------------------------------------------------");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
@@ -345,7 +460,7 @@ public class TestCaseOfCDCSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    logger.info("received event: " + event);
+                    log.info("received event: " + event);
                 }
             }
         });
@@ -362,7 +477,7 @@ public class TestCaseOfCDCSource {
      */
     @Test
     public void cdcUpdateOperationMysql() throws InterruptedException {
-        logger.info("------------------------------------------------------------------------------------------------");
+        log.info("------------------------------------------------------------------------------------------------");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
@@ -386,7 +501,7 @@ public class TestCaseOfCDCSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    logger.info("received event: " + event);
+                    log.info("received event: " + event);
                 }
             }
         });
@@ -402,7 +517,7 @@ public class TestCaseOfCDCSource {
      */
     @Test
     public void cdcInsertOperationOracle() throws InterruptedException {
-        logger.info("------------------------------------------------------------------------------------------------");
+        log.info("------------------------------------------------------------------------------------------------");
 
         SiddhiManager siddhiManager = new SiddhiManager();
 
@@ -426,7 +541,7 @@ public class TestCaseOfCDCSource {
             public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
                 EventPrinter.print(timeStamp, inEvents, removeEvents);
                 for (Event event : inEvents) {
-                    logger.info("received event: " + event);
+                    log.info("received event: " + event);
                 }
             }
         });
