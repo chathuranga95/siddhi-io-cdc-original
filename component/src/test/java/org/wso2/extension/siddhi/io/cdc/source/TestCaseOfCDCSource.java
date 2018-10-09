@@ -32,6 +32,7 @@ import org.wso2.siddhi.core.util.SiddhiTestHelper;
 import org.wso2.siddhi.core.util.config.InMemoryConfigManager;
 import org.wso2.siddhi.core.util.persistence.InMemoryPersistenceStore;
 import org.wso2.siddhi.core.util.persistence.PersistenceStore;
+import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -196,7 +197,7 @@ public class TestCaseOfCDCSource {
         Thread.sleep(5000);
         logger.info("restarting...");
         siddhiAppRuntime.shutdown();
-        // TODO: 10/4/18 don't create a new one? discuss.
+        // TODO: 10/4/18 don't create a new one. discuss with Tishan ayiya
         siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition + query);
         siddhiAppRuntime.addCallback("query1", new QueryCallback() {
             @Override
@@ -223,9 +224,57 @@ public class TestCaseOfCDCSource {
 //        siddhiAppRuntime.shutdown();
 
         //TODO: 10/4/18 have test cases for all insert, up, del and persistence also
-        //todo: use twi siddhi apps in automating
+        //todo: use two siddhi apps in automating
         // TODO: 10/4/18 check for validations
         // use fabric8
+    }
+
+    /**
+     * Test case to validate operation given by the user.
+     */
+    @Test
+    public void cdcOperationValidation() throws InterruptedException {
+        logger.info("------------------------------------------------------------------------------------------------");
+        SiddhiManager siddhiManager = new SiddhiManager();
+
+        String invalidOperation = "otherOperation";
+
+        //stream definition with invalid operation.
+        String inStreamDefinition = "" +
+                "@app:name('cdcTesting')" +
+                "@source(type = 'cdc' , url = 'jdbc:mysql://localhost:3306/SimpleDB',  username = 'root'," +
+                " password = '1234', table.name = 'login', " +
+                " operation = '" + invalidOperation + "'," +
+                " @map(type='keyvalue'))" +
+                "define stream istm (id string, name string);";
+        String query = ("@info(name = 'query1') " +
+                "from istm " +
+                "select *  " +
+                "insert into outputStream;");
+
+
+        try {
+            SiddhiAppRuntime siddhiAppRuntime = siddhiManager.createSiddhiAppRuntime(inStreamDefinition +
+                    query);
+
+            siddhiAppRuntime.addCallback("query1", new QueryCallback() {
+                @Override
+                public void receive(long timeStamp, Event[] inEvents, Event[] removeEvents) {
+                    for (Event event : inEvents) {
+                        logger.info("Received event: " + event);
+                    }
+                }
+            });
+            siddhiAppRuntime.start();
+            SiddhiTestHelper.waitForEvents(500, 2, new AtomicInteger(1), 10000);
+            siddhiAppRuntime.shutdown();
+        } catch (SiddhiAppValidationException valEx) {
+            Assert.assertEquals("Unsupported operation: '" + invalidOperation + "'. operation should be one of" +
+                            " 'insert', 'update' or 'delete'",
+                    valEx.getMessageWithOutContext());
+        }
+
+
     }
 
     /**

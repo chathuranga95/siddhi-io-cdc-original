@@ -336,7 +336,8 @@ public class CDCSource extends Source {
         if (!(operation.equalsIgnoreCase(CDCSourceConstants.INSERT)
                 || operation.equalsIgnoreCase(CDCSourceConstants.UPDATE)
                 || operation.equalsIgnoreCase(CDCSourceConstants.DELETE))) {
-            throw new SiddhiAppValidationException("operation should be one of 'insert', 'update' or 'delete'");
+            throw new SiddhiAppValidationException("Unsupported operation: '" + operation + "'." +
+                    " operation should be one of 'insert', 'update' or 'delete'");
         }
 
         if (carbonHome.isEmpty()) {
