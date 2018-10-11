@@ -28,14 +28,12 @@ import org.wso2.extension.siddhi.io.cdc.util.CDCSourceConstants;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class saves and loads the change data offsets in in-memory.
  */
 public class InMemoryOffsetBackingStore extends MemoryOffsetBackingStore {
     private static final Logger log = LoggerFactory.getLogger(InMemoryOffsetBackingStore.class);
-    ReentrantLock lock = new ReentrantLock();
     private CDCSource cdcSource = null;
     private Map<byte[], byte[]> inMemoryOffsetCache = new HashMap<>();
 

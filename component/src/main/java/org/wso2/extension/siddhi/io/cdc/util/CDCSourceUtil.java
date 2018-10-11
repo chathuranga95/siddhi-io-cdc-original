@@ -18,9 +18,11 @@
 
 package org.wso2.extension.siddhi.io.cdc.util;
 
+import io.debezium.embedded.spi.OffsetCommitPolicy;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.errors.DataException;
 import org.wso2.extension.siddhi.io.cdc.source.CDCSource;
 import org.wso2.extension.siddhi.io.cdc.source.InMemoryOffsetBackingStore;
 import org.wso2.extension.siddhi.io.cdc.source.PeriodicSnapshotCommitOffsetPolicy;
@@ -122,7 +124,8 @@ public class CDCSourceUtil {
 
             //set the offset.commit.policy to PeriodicSnapshotCommitOffsetPolicy.
             configMap.put(CDCSourceConstants.OFFSET_COMMIT_POLICY,
-                    PeriodicSnapshotCommitOffsetPolicy.class.getName());
+                    OffsetCommitPolicy.AlwaysCommitOffsetPolicy.class.getName());
+//                    PeriodicSnapshotCommitOffsetPolicy.class.getName());
 
             //set connector property: name
             configMap.put("name", siddhiAppName + siddhiStreamName);
@@ -173,10 +176,9 @@ public class CDCSourceUtil {
         //get the change data object's operation.
         String op;
 
-        // TODO: 10/5/18 search this record.get("op") and talk to Tishan ayiya
         try {
             op = (String) record.get("op");
-        } catch (Exception ex) {
+        } catch (DataException ex) {
             return detailsMap;
         }
 

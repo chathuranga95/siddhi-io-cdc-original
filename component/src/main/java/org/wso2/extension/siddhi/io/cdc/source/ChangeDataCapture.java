@@ -34,7 +34,6 @@ import java.util.concurrent.locks.ReentrantLock;
  **/
 class ChangeDataCapture {
 
-    private static final Logger log = Logger.getLogger(ChangeDataCapture.class);
     private String operation;
     private Configuration config;
     private SourceEventListener sourceEventListener;
@@ -74,7 +73,7 @@ class ChangeDataCapture {
      *
      * @return engine.
      */
-    EmbeddedEngine getEngine() {
+    EmbeddedEngine getEngine() throws NullPointerException {
         // Create an engine with above set configuration ...
         engine = EmbeddedEngine.create()
                 .using(config)

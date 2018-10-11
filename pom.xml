@@ -81,7 +81,6 @@
                 <artifactId>mysql-binlog-connector-java</artifactId>
                 <version>${mysql-binlog-connector-java.version}</version>
             </dependency>
-            <!-- https://mvnrepository.com/artifact/org.wso2.extension.siddhi.store.rdbms/siddhi-store-rdbms -->
             <dependency>
                 <groupId>org.wso2.extension.siddhi.store.rdbms</groupId>
                 <artifactId>siddhi-store-rdbms</artifactId>

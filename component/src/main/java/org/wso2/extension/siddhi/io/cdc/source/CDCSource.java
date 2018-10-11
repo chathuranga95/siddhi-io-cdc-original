@@ -148,7 +148,6 @@ public class CDCSource extends Source {
     private static final Logger log = Logger.getLogger(CDCSource.class);
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Map<byte[], byte[]> offsetData = new HashMap<>();
-    //    private Map<ByteBuffer, ByteBuffer> offsetData = new HashMap<>();
     private String operation;
     private ChangeDataCapture changeDataCapture;
     private String historyFileDirectory;
@@ -232,7 +231,7 @@ public class CDCSource extends Source {
      */
     @Override
     public Class[] getOutputEventClasses() {
-        return new Class[]{Map.class, HashMap.class};
+        return new Class[]{Map.class};
     }
 
     /**
@@ -240,13 +239,14 @@ public class CDCSource extends Source {
      */
     @Override
     public void connect(ConnectionCallback connectionCallback) throws ConnectionUnavailableException {
-        // TODO: 10/4/18 if some error occurs, throw the exception
-
         //keep the object reference in Object keeper
         cdcSourceObjectKeeper.addCdcObject(this);
 
-        executorService.execute(changeDataCapture.getEngine());
-
+        try {
+            executorService.execute(changeDataCapture.getEngine());
+        } catch (NullPointerException ex) {
+            throw new ConnectionUnavailableException("Connection is unavailable. Check parameters.", ex);
+        }
     }
 
     /**
@@ -308,29 +308,21 @@ public class CDCSource extends Source {
     public void restoreState(Map<String, Object> map) {
         Object cacheObj = map.get("cacheObj");
         this.offsetData = (HashMap<byte[], byte[]>) cacheObj;
-        // this.offsetData = (HashMap<ByteBuffer, ByteBuffer>) cacheObj;
-
     }
 
     Map<byte[], byte[]> getOffsetData() {
         try {
             Thread.sleep(50);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error(e);
         }
         return offsetData;
     }
 
-//    Map<ByteBuffer, ByteBuffer> getOffsetData() {
-//        return offsetData;
-//    }
 
     void setOffsetData(Map<byte[], byte[]> offsetData) {
         this.offsetData = offsetData;
     }
-//    void setOffsetData(Map<ByteBuffer, ByteBuffer> offsetData) {
-//        this.offsetData = offsetData;
-//    }
 
     /**
      * Used to Validate the parameters.
@@ -342,7 +334,6 @@ public class CDCSource extends Source {
             throw new SiddhiAppValidationException("Unsupported operation: '" + operation + "'." +
                     " operation should be one of 'insert', 'update' or 'delete'");
         }
-
         if (carbonHome.isEmpty()) {
             throw new SiddhiAppValidationException("Couldn't initialize Carbon Home.");
         } else if (!historyFileDirectory.endsWith(File.separator)) {

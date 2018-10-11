@@ -28,8 +28,8 @@ import java.time.Duration;
  * Offsets are always committed, thus all offsets will be flushed with the periodic snapshot.
  */
 public class PeriodicSnapshotCommitOffsetPolicy implements OffsetCommitPolicy {
-
-    // TODO: 10/8/18 talk to Tishan ayiya, without below constructor, it is not working
+    
+    // TODO: 10/8/18 search Alwayscommit policy failing reason.
     public PeriodicSnapshotCommitOffsetPolicy(Configuration config) {
     }
 
