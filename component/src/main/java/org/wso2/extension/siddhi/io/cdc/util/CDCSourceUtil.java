@@ -22,13 +22,10 @@ import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.DataException;
-import org.wso2.extension.siddhi.io.cdc.source.CDCSource;
 import org.wso2.extension.siddhi.io.cdc.source.InMemoryOffsetBackingStore;
 import org.wso2.extension.siddhi.io.cdc.source.WrongConfigurationException;
 import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
-import java.io.File;
-import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,33 +224,15 @@ public class CDCSourceUtil {
 
     /**
      * Get the WSO2 Stream Processor's local path from System Variables.
-     * if carbon.home is not set, return the current project path. (for test cases only)
+     * if carbon.home is not set, return the current project path. (for test cases and for use as a java library)
      */
     public static String getCarbonHome() {
         String path = System.getProperty("carbon.home");
-        // TODO: 10/4/18 move this code into test utils
+        
         if (path == null) {
-            path = CDCSource.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-            String decodedPath;
-            try {
-                decodedPath = URLDecoder.decode(path, "UTF-8");
-            } catch (Exception ex) {
-                return "";
-            }
-
-            int x = decodedPath.length() - 1;
-            int folderUpCharacterCount = 0;
-            int counter = 0;
-            while (folderUpCharacterCount < 2) {
-                if (Character.toString(decodedPath.charAt(x - counter)).equals(File.separator)) {
-                    folderUpCharacterCount++;
-                }
-                counter++;
-            }
-
-            decodedPath = decodedPath.substring(0, x - counter + 2);
-            return decodedPath;
+            path =  System.getProperty("user.dir");
         }
+
         return path;
     }
 }

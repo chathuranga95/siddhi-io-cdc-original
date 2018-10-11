@@ -156,9 +156,9 @@
         <jacoco.plugin.version>0.7.9</jacoco.plugin.version>
         <carbon.feature.plugin.version>3.0.0</carbon.feature.plugin.version>
         <mysql-binlog-connector-java.version>0.13.0</mysql-binlog-connector-java.version>
-        <debezium-connector-mysql.version>0.8.0.Final</debezium-connector-mysql.version>
-        <debezium-embedded.version>0.8.0.Final</debezium-embedded.version>
-        <debezium-connector-oracle.version>0.8.0.CR1</debezium-connector-oracle.version>
+        <debezium-connector-mysql.version>0.8.3.Final</debezium-connector-mysql.version>
+        <debezium-embedded.version>0.8.3.Final</debezium-embedded.version>
+        <debezium-connector-oracle.version>0.8.3.Final</debezium-connector-oracle.version>
         <org.testng.version>6.11</org.testng.version>
         <siddhi-store-rdbms.version>4.0.39</siddhi-store-rdbms.version>
     </properties>

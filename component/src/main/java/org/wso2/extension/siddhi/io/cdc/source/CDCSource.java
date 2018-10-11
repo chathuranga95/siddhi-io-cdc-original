@@ -200,7 +200,7 @@ public class CDCSource extends Source {
         validateParameter();
 
         //send this object reference and preferred operation to changeDataCapture object
-        changeDataCapture = new ChangeDataCapture(operation);
+        changeDataCapture = new ChangeDataCapture(operation, sourceEventListener);
 
         //create the folder for history file if not exists
         File directory = new File(historyFileDirectory);
@@ -210,13 +210,13 @@ public class CDCSource extends Source {
                 log.debug("Directory created for history file.");
             }
         }
-
+// TODO: 10/11/18 see the exclusions in log4j at pom
         try {
             Map<String, Object> configMap = CDCSourceUtil.getConfigMap(username, password, url, tableName,
                     historyFileDirectory, siddhiAppName, streamName, serverID, serverName, connectorProperties,
                     this.hashCode());
             changeDataCapture.setConfig(configMap);
-            changeDataCapture.setSourceEventListener(sourceEventListener);
+            //changeDataCapture.setSourceEventListener(sourceEventListener);
         } catch (WrongConfigurationException ex) {
             throw new SiddhiAppCreationException("The cdc source couldn't get started. Invalid" +
                     " configuration parameters.", ex);

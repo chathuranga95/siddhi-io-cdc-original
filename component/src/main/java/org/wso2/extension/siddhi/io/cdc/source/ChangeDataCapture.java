@@ -22,7 +22,6 @@ import io.debezium.config.Configuration;
 import io.debezium.embedded.EmbeddedEngine;
 import io.debezium.embedded.spi.OffsetCommitPolicy;
 import org.apache.kafka.connect.connector.ConnectRecord;
-import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
 import org.wso2.siddhi.core.stream.input.source.SourceEventListener;
 
@@ -38,21 +37,14 @@ class ChangeDataCapture {
     private String operation;
     private Configuration config;
     private SourceEventListener sourceEventListener;
-    private EmbeddedEngine engine;
     private ReentrantLock lock = new ReentrantLock();
 
     // TODO: 10/4/18 let the user to set the connector class, discuss with Tishan ayiya
     private Condition condition = lock.newCondition();
     private boolean paused = false;
 
-    ChangeDataCapture(String operation) {
+    ChangeDataCapture(String operation, SourceEventListener sourceEventListener) {
         this.operation = operation;
-    }
-
-    /**
-     * @param sourceEventListener is used to initialize this.sourceEventListener.
-     */
-    void setSourceEventListener(SourceEventListener sourceEventListener) {
         this.sourceEventListener = sourceEventListener;
     }
 
@@ -76,7 +68,7 @@ class ChangeDataCapture {
      */
     EmbeddedEngine getEngine() throws NullPointerException {
         // Create an engine with above set configuration ...
-        engine = EmbeddedEngine.create()
+        EmbeddedEngine engine = EmbeddedEngine.create()
                 .using(OffsetCommitPolicy.always())
                 .using(config)
                 .notifying(this::handleEvent)
