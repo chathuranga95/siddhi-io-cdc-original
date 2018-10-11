@@ -64,7 +64,7 @@
     <tr>
         <td style="vertical-align: top">connector.properties</td>
         <td style="vertical-align: top; word-wrap: break-word">Debezium connector specified properties as a comma separated string. <br>This properties will have more priority over the parameters.</td>
-        <td style="vertical-align: top"><Empty_String></td>
+        <td style="vertical-align: top">Empty_String</td>
         <td style="vertical-align: top">STRING</td>
         <td style="vertical-align: top">Yes</td>
         <td style="vertical-align: top">No</td>
@@ -72,7 +72,7 @@
     <tr>
         <td style="vertical-align: top">database.server.id</td>
         <td style="vertical-align: top; word-wrap: break-word">For MySQL, a unique integer between 1 to 2^32 as the ID, This is used when joining MySQL database cluster to read binlog</td>
-        <td style="vertical-align: top"><random integer between 5400 and 6400></td>
+        <td style="vertical-align: top">Random integer between 5400 and 6400</td>
         <td style="vertical-align: top">STRING</td>
         <td style="vertical-align: top">Yes</td>
         <td style="vertical-align: top">No</td>
