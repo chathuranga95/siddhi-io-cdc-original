@@ -18,14 +18,12 @@
 
 package org.wso2.extension.siddhi.io.cdc.util;
 
-import io.debezium.embedded.spi.OffsetCommitPolicy;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.DataException;
 import org.wso2.extension.siddhi.io.cdc.source.CDCSource;
 import org.wso2.extension.siddhi.io.cdc.source.InMemoryOffsetBackingStore;
-import org.wso2.extension.siddhi.io.cdc.source.PeriodicSnapshotCommitOffsetPolicy;
 import org.wso2.extension.siddhi.io.cdc.source.WrongConfigurationException;
 import org.wso2.siddhi.query.api.exception.SiddhiAppValidationException;
 
@@ -121,11 +119,6 @@ public class CDCSourceUtil {
                     CDCSourceConstants.DATABASE_HISTORY_FILEBASE_HISTORY);
             configMap.put(CDCSourceConstants.DATABASE_HISTORY_FILE_NAME,
                     historyFileDirectory + siddhiStreamName + ".dat");
-
-            //set the offset.commit.policy to PeriodicSnapshotCommitOffsetPolicy.
-            configMap.put(CDCSourceConstants.OFFSET_COMMIT_POLICY,
-                    OffsetCommitPolicy.AlwaysCommitOffsetPolicy.class.getName());
-//                    PeriodicSnapshotCommitOffsetPolicy.class.getName());
 
             //set connector property: name
             configMap.put("name", siddhiAppName + siddhiStreamName);

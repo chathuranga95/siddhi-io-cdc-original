@@ -20,6 +20,7 @@ package org.wso2.extension.siddhi.io.cdc.source;
 
 import io.debezium.config.Configuration;
 import io.debezium.embedded.EmbeddedEngine;
+import io.debezium.embedded.spi.OffsetCommitPolicy;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.log4j.Logger;
 import org.wso2.extension.siddhi.io.cdc.util.CDCSourceUtil;
@@ -76,6 +77,7 @@ class ChangeDataCapture {
     EmbeddedEngine getEngine() throws NullPointerException {
         // Create an engine with above set configuration ...
         engine = EmbeddedEngine.create()
+                .using(OffsetCommitPolicy.always())
                 .using(config)
                 .notifying(this::handleEvent)
                 .build();
