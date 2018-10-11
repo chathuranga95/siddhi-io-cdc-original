@@ -38,8 +38,6 @@ class ChangeDataCapture {
     private Configuration config;
     private SourceEventListener sourceEventListener;
     private ReentrantLock lock = new ReentrantLock();
-
-    // TODO: 10/4/18 let the user to set the connector class, discuss with Tishan ayiya
     private Condition condition = lock.newCondition();
     private boolean paused = false;
 

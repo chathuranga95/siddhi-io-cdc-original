@@ -80,7 +80,6 @@ public class CDCSourceUtil {
                     //Add other MySQL specific details to configMap.
                     configMap.put(CDCSourceConstants.CONNECTOR_CLASS, CDCSourceConstants.MYSQL_CONNECTOR_CLASS);
 
-
                     break;
                 }
                 default: {
@@ -228,9 +227,9 @@ public class CDCSourceUtil {
      */
     public static String getCarbonHome() {
         String path = System.getProperty("carbon.home");
-        
+
         if (path == null) {
-            path =  System.getProperty("user.dir");
+            path = System.getProperty("user.dir");
         }
 
         return path;

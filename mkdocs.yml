@@ -1,4 +1,4 @@
-site_name: Siddhi io CDC
+site_name: Siddhi-IO-CDC
 site_description: Siddhi Change Data Capture io Extension
 site_author: WSO2
 site_url: https://wso2-extensions.github.io/siddhi-io-cdc/
@@ -6,7 +6,7 @@ extra_css:
 - stylesheets/extra.css
 extra_javascript:
 - javascripts/extra.js
-repo_name: Siddhi-Map-Json
+repo_name: Siddhi-IO-CDC
 repo_url: https://github.com/wso2-extensions/siddhi-io-cdc
 copyright: Copyright &copy; 2011 - 2018 WSO2
 theme:

@@ -6,16 +6,16 @@ The **siddhi-io-cdc extension** is an extension to <a target="_blank" href="http
 
 ## Prerequisites
 
-* The MySQL server must be configured to use a row-level binary log. 
-* MySQL jdbc driver added to the `<STREAM_PROCESSOR_HOME>/lib` directory.
-* User should enable state persistence on deployment.yaml file.
+* The MySQL server should be configured to use a row-level binary log.
+* MySQL jdbc driver should be added to the `<STREAM_PROCESSOR_HOME>/lib` directory.
+* WSO2 SP State persistence should be enabled.
 * A MySQL user should be created with SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT privileges on the tables he wants to capture changes.
 
 Find some useful links below:
 
-* <a target="_blank" href="https://github.com/chathuranga95/siddhi-io-cdc">Source code</a>
-* <a target="_blank" href="https://github.com/chathuranga95/siddhi-io-cdc/releases">Releases</a>
-* <a target="_blank" href="https://github.com/chathuranga95/siddhi-io-cdc/issues">Issue tracker</a>
+* <a target="_blank" href="https://github.com/wso2-extensions/siddhi-io-cdc">Source code</a>
+* <a target="_blank" href="https://github.com/wso2-extensions/siddhi-io-cdc/releases">Releases</a>
+* <a target="_blank" href="https://github.com/wso2-extensions/siddhi-io-cdc/issues">Issue tracker</a>
 
 ## Latest API Docs
 
@@ -27,7 +27,7 @@ Latest API Docs is <a target="_blank" href="https://wso2-extensions.github.io/">
 
 * You can use this extension with the latest <a target="_blank" href="https://github.com/wso2/product-sp/releases">WSO2 Stream Processor</a> that is a part of the <a target="_blank" href="http://wso2.com/analytics?utm_source=gitanalytics&utm_campaign=gitanalytics_Jul17">WSO2 Analytics</a> offering, with editor, debugger and simulation support.
 
-* This extension is shipped by default with WSO2 Stream Processor. If you need to use an alternative version of this extension, you can replace the component <a target="_blank" href="https://github.com/chathuranga95/siddhi-io-cdc/releases">jar</a> that can be found in the `<STREAM_PROCESSOR_HOME>/lib` directory.
+* This extension is shipped by default with WSO2 Stream Processor. If you need to use an alternative version of this extension, you can replace the component <a target="_blank" href="https://github.com/wso2-extensions/siddhi-io-cdc/releases">jar</a> that can be found in the `<STREAM_PROCESSOR_HOME>/lib` directory.
 
 **Using the extension as a <a target="_blank" href="https://wso2.github.io/siddhi/documentation/running-as-a-java-library">java library</a>**
 

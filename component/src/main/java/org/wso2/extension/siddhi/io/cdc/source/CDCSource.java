@@ -88,14 +88,14 @@ import java.util.concurrent.Executors;
                                 "\nThis properties will have more priority over the parameters.",
                         type = DataType.STRING,
                         optional = true,
-                        defaultValue = "<Empty_String>"
+                        defaultValue = "Empty_String"
                 ),
                 @Parameter(name = "database.server.id",
                         description = "For MySQL, a unique integer between 1 to 2^32 as the ID," +
                                 " This is used when joining MySQL database cluster to read binlog",
                         type = DataType.STRING,
                         optional = true,
-                        defaultValue = "<random integer between 5400 and 6400>"
+                        defaultValue = "Random integer between 5400 and 6400"
                 ),
                 @Parameter(name = "database.server.name",
                         description = "Logical name that identifies and provides a namespace for the " +
@@ -210,13 +210,12 @@ public class CDCSource extends Source {
                 log.debug("Directory created for history file.");
             }
         }
-// TODO: 10/11/18 see the exclusions in log4j at pom
+
         try {
             Map<String, Object> configMap = CDCSourceUtil.getConfigMap(username, password, url, tableName,
                     historyFileDirectory, siddhiAppName, streamName, serverID, serverName, connectorProperties,
                     this.hashCode());
             changeDataCapture.setConfig(configMap);
-            //changeDataCapture.setSourceEventListener(sourceEventListener);
         } catch (WrongConfigurationException ex) {
             throw new SiddhiAppCreationException("The cdc source couldn't get started. Invalid" +
                     " configuration parameters.", ex);

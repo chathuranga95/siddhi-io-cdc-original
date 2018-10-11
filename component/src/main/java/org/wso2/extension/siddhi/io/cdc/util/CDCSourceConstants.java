@@ -47,8 +47,6 @@ public class CDCSourceConstants {
     public static final String OFFSET_STORAGE = "offset.storage";
     public static final String CDC_SOURCE_OBJECT = "cdc.source.object";
     public static final String DATABASE_HISTORY = "database.history";
-    public static final String OFFSET_COMMIT_POLICY = "offset.commit.policy";
     public static final String MYSQL_CONNECTOR_CLASS = "io.debezium.connector.mysql.MySqlConnector";
     public static final String BEFORE_PREFIX = "before_";
-
 }
